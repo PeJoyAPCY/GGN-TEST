@@ -6,6 +6,10 @@
    File: js/api.js
    ====================================================== */
 
+    const GGN_CONFIG = {
+    API_URL: "https://script.google.com/macros/s/AKfycbxcapkXv-BOhTaKG1CR578V7v9IIUdXQpJiq2bcCyxdYiIV0gumgYBaTE5rFge1L_otBg/exec"
+    };
+
 /**
  * ======================================================
  * 1. API CONFIGURATION
