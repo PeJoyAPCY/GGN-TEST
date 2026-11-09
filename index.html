@@ -1,0 +1,1076 @@
+
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="description"
+    content="GGN Test - ระบบทดสอบความรู้พนักงานรักษาความปลอดภัย"
+  >
+
+  <meta name="theme-color" content="#1d4ed8">
+
+  <title>GGN Test | ระบบทดสอบความรู้</title>
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+  <!-- ==================================================
+       APPLICATION HEADER
+       ================================================== -->
+
+  <header class="main-header">
+
+    <div class="brand">
+
+      <div class="brand-logo">
+        GGN
+      </div>
+
+      <div>
+        <div class="brand-name">
+          GGN TEST
+        </div>
+
+        <div class="brand-subtitle">
+          ระบบทดสอบความรู้พนักงานรักษาความปลอดภัย
+        </div>
+      </div>
+
+    </div>
+
+    <div id="connection-status">
+      <span class="badge badge-secondary">
+        กำลังตรวจสอบระบบ
+      </span>
+    </div>
+
+  </header>
+
+
+  <!-- ==================================================
+       MAIN APPLICATION
+       ================================================== -->
+
+  <main class="container">
+
+    <!-- ================================================
+         GLOBAL ALERT
+         ================================================ -->
+
+    <div
+      id="global-alert"
+      class="alert hidden"
+      role="alert"
+      aria-live="polite"
+    ></div>
+
+
+    <!-- ================================================
+         LOADING
+         ================================================ -->
+
+    <section
+      id="app-loading"
+      class="loading-overlay"
+    >
+
+      <div class="loading-content">
+
+        <div class="spinner"></div>
+
+        <p>
+          กำลังเชื่อมต่อระบบ GGN Test
+        </p>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================================================
+         SECTION 1: EXAMINEE SELECTION
+         ================================================ -->
+
+    <section
+      id="selection-section"
+      class="login-page hidden"
+    >
+
+      <div class="login-card">
+
+        <div class="login-header">
+
+          <div class="login-logo">
+            GGN
+          </div>
+
+          <h1 class="login-title">
+            GGN TEST
+          </h1>
+
+          <p class="login-description">
+            ระบบทดสอบความรู้พนักงานรักษาความปลอดภัย
+          </p>
+
+        </div>
+
+
+        <!-- System Information -->
+
+        <div
+          id="selection-info"
+          class="alert alert-info"
+        >
+          กรุณาเลือกชื่อของท่านเพื่อเข้าสู่ระบบทดสอบ
+        </div>
+
+
+        <!-- Examinee Selection Form -->
+
+        <form id="examinee-selection-form">
+
+          <div class="form-group">
+
+            <label
+              for="examinee-select"
+              class="form-label"
+            >
+              ชื่อผู้เข้าสอบ
+              <span class="required">*</span>
+            </label>
+
+            <select
+              id="examinee-select"
+              name="examineeId"
+              class="form-control"
+              required
+              disabled
+            >
+
+              <option value="">
+                กำลังโหลดรายชื่อผู้เข้าสอบ...
+              </option>
+
+            </select>
+
+            <div
+              id="examinee-select-error"
+              class="form-error hidden"
+            ></div>
+
+          </div>
+
+
+          <!-- Examinee Information -->
+
+          <div
+            id="examinee-information"
+            class="card mb-4 hidden"
+          >
+
+            <div class="card-title mb-2">
+              ข้อมูลผู้เข้าสอบ
+            </div>
+
+            <div class="form-group">
+
+              <div class="text-secondary">
+                ชื่อ-นามสกุล
+              </div>
+
+              <strong id="selected-examinee-name">
+                -
+              </strong>
+
+            </div>
+
+            <div class="form-group">
+
+              <div class="text-secondary">
+                รหัสพนักงาน
+              </div>
+
+              <strong id="selected-examinee-code">
+                -
+              </strong>
+
+            </div>
+
+            <div class="form-group">
+
+              <div class="text-secondary">
+                รุ่นการทดสอบ
+              </div>
+
+              <strong id="selected-examinee-cohort">
+                -
+              </strong>
+
+            </div>
+
+          </div>
+
+
+          <button
+            type="submit"
+            id="btn-enter-system"
+            class="btn btn-primary btn-block btn-lg"
+            disabled
+          >
+            เข้าสู่ระบบทดสอบ
+          </button>
+
+        </form>
+
+
+        <div class="card-footer text-center">
+
+          <p class="text-muted">
+            หากไม่พบรายชื่อ กรุณาติดต่อเจ้าหน้าที่
+          </p>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================================================
+         SECTION 2: EXAMINEE DASHBOARD
+         ================================================ -->
+
+    <section
+      id="examinee-dashboard"
+      class="hidden"
+    >
+
+      <!-- Examinee Profile -->
+
+      <div class="page-header">
+
+        <div>
+
+          <h1 class="page-title">
+            รายการทดสอบของฉัน
+          </h1>
+
+          <p class="page-description">
+            ตรวจสอบรายวิชาและสถานะการทดสอบ
+          </p>
+
+        </div>
+
+        <button
+          type="button"
+          id="btn-change-examinee"
+          class="btn btn-secondary"
+        >
+          เปลี่ยนผู้เข้าสอบ
+        </button>
+
+      </div>
+
+
+      <div class="card mb-4">
+
+        <div class="card-header">
+
+          <div class="card-title">
+            ข้อมูลผู้เข้าสอบ
+          </div>
+
+          <span
+            id="examinee-status"
+            class="badge badge-success"
+          >
+            พร้อมสอบ
+          </span>
+
+        </div>
+
+        <div class="form-row">
+
+          <div class="form-group">
+
+            <div class="text-secondary">
+              ชื่อ-นามสกุล
+            </div>
+
+            <strong id="dashboard-examinee-name">
+              -
+            </strong>
+
+          </div>
+
+          <div class="form-group">
+
+            <div class="text-secondary">
+              รหัสพนักงาน
+            </div>
+
+            <strong id="dashboard-examinee-code">
+              -
+            </strong>
+
+          </div>
+
+          <div class="form-group">
+
+            <div class="text-secondary">
+              รุ่นการทดสอบ
+            </div>
+
+            <strong id="dashboard-examinee-cohort">
+              -
+            </strong>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- Exam Summary -->
+
+      <div class="stats-grid mb-4">
+
+        <div class="stat-card">
+
+          <div class="stat-label">
+            จำนวนวิชาทั้งหมด
+          </div>
+
+          <div
+            id="total-subjects"
+            class="stat-value"
+          >
+            9
+          </div>
+
+          <div class="stat-description">
+            รายวิชาที่กำหนด
+          </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+          <div class="stat-label">
+            สอบผ่าน
+          </div>
+
+          <div
+            id="passed-subjects"
+            class="stat-value text-success"
+          >
+            0
+          </div>
+
+          <div class="stat-description">
+            วิชาที่ผ่านเกณฑ์
+          </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+          <div class="stat-label">
+            รอสอบ
+          </div>
+
+          <div
+            id="pending-subjects"
+            class="stat-value"
+          >
+            0
+          </div>
+
+          <div class="stat-description">
+            วิชาที่ยังไม่เริ่มสอบ
+          </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+          <div class="stat-label">
+            ดำเนินการสอบ
+          </div>
+
+          <div
+            id="in-progress-subjects"
+            class="stat-value text-warning"
+          >
+            0
+          </div>
+
+          <div class="stat-description">
+            วิชาที่สอบค้างไว้
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- Subject List -->
+
+      <div class="card">
+
+        <div class="card-header">
+
+          <div class="card-title">
+            รายวิชาที่ต้องทดสอบ
+          </div>
+
+          <span class="badge badge-info">
+            9 วิชา
+          </span>
+
+        </div>
+
+
+        <div
+          id="subject-list-loading"
+          class="text-center text-muted"
+        >
+          กำลังโหลดรายวิชา...
+        </div>
+
+
+        <div
+          id="subject-list"
+          class="subject-list"
+        >
+
+          <!-- Subject cards will be rendered by app.js -->
+
+        </div>
+
+
+        <div
+          id="subject-list-empty"
+          class="empty-state hidden"
+        >
+
+          <div class="empty-state-icon">
+            -
+          </div>
+
+          <div class="empty-state-title">
+            ยังไม่มีรายวิชาที่เปิดสอบ
+          </div>
+
+          <p class="empty-state-description">
+            กรุณาติดต่อเจ้าหน้าที่
+          </p>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================================================
+         SECTION 3: EXAM INSTRUCTIONS
+         ================================================ -->
+
+    <section
+      id="exam-instructions-section"
+      class="hidden"
+    >
+
+      <div class="page-header">
+
+        <div>
+
+          <h1 class="page-title">
+            คำชี้แจงก่อนเริ่มสอบ
+          </h1>
+
+          <p class="page-description">
+            กรุณาอ่านคำชี้แจงให้ครบถ้วนก่อนเริ่มทำข้อสอบ
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div class="card">
+
+        <div class="card-header">
+
+          <div class="card-title">
+            ข้อมูลการสอบ
+          </div>
+
+        </div>
+
+
+        <div class="form-group">
+
+          <div class="text-secondary">
+            รายวิชา
+          </div>
+
+          <h3 id="instruction-subject-name">
+            -
+          </h3>
+
+        </div>
+
+
+        <div class="form-row">
+
+          <div class="form-group">
+
+            <div class="text-secondary">
+              จำนวนข้อสอบ
+            </div>
+
+            <strong id="instruction-question-count">
+              -
+            </strong>
+
+          </div>
+
+          <div class="form-group">
+
+            <div class="text-secondary">
+              เวลาสอบ
+            </div>
+
+            <strong id="instruction-duration">
+              -
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <div class="divider"></div>
+
+
+        <h3 class="mb-3">
+          ข้อปฏิบัติในการสอบ
+        </h3>
+
+        <div class="alert alert-info">
+
+          <ol style="padding-left: 20px;">
+
+            <li>
+              ผู้เข้าสอบต้องตรวจสอบชื่อของตนเองก่อนเริ่มสอบ
+            </li>
+
+            <li>
+              อ่านคำถามและตัวเลือกให้ครบถ้วนก่อนตอบ
+            </li>
+
+            <li>
+              เลือกคำตอบที่ถูกต้องที่สุดเพียงหนึ่งข้อ
+            </li>
+
+            <li>
+              ระบบจะบันทึกคำตอบระหว่างการสอบ
+            </li>
+
+            <li>
+              เมื่อหมดเวลาระบบจะสิ้นสุดการสอบตามเวลาที่กำหนด
+            </li>
+
+            <li>
+              หากอินเทอร์เน็ตหลุดหรือปิดเบราว์เซอร์ สามารถกลับเข้าสู่ข้อสอบเดิมได้ โดยใช้เวลาที่เหลือจากกำหนดเวลาเดิม
+            </li>
+
+            <li>
+              การส่งข้อสอบแล้วจะไม่สามารถกลับมาแก้ไขคำตอบได้
+            </li>
+
+          </ol>
+
+        </div>
+
+
+        <div class="alert alert-warning">
+
+          <strong>
+            ข้อควรระวัง
+          </strong>
+
+          <p>
+            ไม่ควรปิดหน้าต่างหรือออกจากระบบระหว่างทำข้อสอบ
+            หากเกิดปัญหาให้กลับเข้าสู่ระบบด้วยชื่อเดิม
+          </p>
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label class="flex gap-2">
+
+            <input
+              type="checkbox"
+              id="confirm-exam-instructions"
+            >
+
+            <span>
+              ข้าพเจ้าอ่านและเข้าใจคำชี้แจงการสอบแล้ว
+            </span>
+
+          </label>
+
+        </div>
+
+
+        <div class="flex-between flex-wrap gap-3">
+
+          <button
+            type="button"
+            id="btn-cancel-exam"
+            class="btn btn-secondary"
+          >
+            กลับหน้ารายวิชา
+          </button>
+
+          <button
+            type="button"
+            id="btn-start-exam"
+            class="btn btn-primary btn-lg"
+            disabled
+          >
+            เริ่มทำข้อสอบ
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================================================
+         SECTION 4: EXAM AREA
+         ================================================ -->
+
+    <section
+      id="exam-section"
+      class="exam-layout hidden"
+    >
+
+      <!-- Exam Header -->
+
+      <div class="exam-header">
+
+        <div>
+
+          <div
+            id="exam-subject-name"
+            class="exam-subject"
+          >
+            -
+          </div>
+
+          <div
+            id="exam-examinee-name"
+            class="text-secondary"
+          >
+            -
+          </div>
+
+          <div class="exam-progress">
+
+            <div class="text-muted">
+              ความคืบหน้าการตอบ
+              <span id="exam-progress-text">
+                0/0
+              </span>
+            </div>
+
+            <div class="progress-track">
+
+              <div
+                id="exam-progress-bar"
+                class="progress-bar"
+                style="width: 0%"
+              ></div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div
+          id="exam-timer"
+          class="exam-timer"
+          aria-live="off"
+        >
+          00:00
+        </div>
+
+      </div>
+
+
+      <!-- Question Navigation -->
+
+      <div class="card mb-4">
+
+        <div class="card-header">
+
+          <div class="card-title">
+            หมายเลขข้อสอบ
+          </div>
+
+          <div class="text-muted">
+            เลือกเพื่อไปยังข้อที่ต้องการ
+          </div>
+
+        </div>
+
+        <div
+          id="exam-question-navigation"
+          class="exam-question-nav"
+        >
+
+          <!-- Question navigation will be rendered by app.js -->
+
+        </div>
+
+        <div class="flex flex-wrap gap-3">
+
+          <span class="badge badge-success">
+            ตอบแล้ว
+          </span>
+
+          <span class="badge badge-secondary">
+            ยังไม่ตอบ
+          </span>
+
+          <span class="badge badge-primary">
+            ข้อปัจจุบัน
+          </span>
+
+        </div>
+
+      </div>
+
+
+      <!-- Question Container -->
+
+      <div
+        id="exam-question-container"
+      >
+
+        <!-- Questions will be rendered by app.js -->
+
+      </div>
+
+
+      <!-- Exam Navigation -->
+
+      <div class="exam-navigation">
+
+        <button
+          type="button"
+          id="btn-previous-question"
+          class="btn btn-secondary"
+          disabled
+        >
+          ข้อก่อนหน้า
+        </button>
+
+        <button
+          type="button"
+          id="btn-next-question"
+          class="btn btn-primary"
+        >
+          ข้อถัดไป
+        </button>
+
+      </div>
+
+
+      <!-- Submit Exam -->
+
+      <div class="card mt-4">
+
+        <div class="flex-between flex-wrap gap-3">
+
+          <div>
+
+            <strong>
+              ตรวจสอบคำตอบก่อนส่งข้อสอบ
+            </strong>
+
+            <p class="text-muted">
+              ระบบจะไม่อนุญาตให้แก้ไขคำตอบหลังส่งข้อสอบ
+            </p>
+
+          </div>
+
+          <button
+            type="button"
+            id="btn-submit-exam"
+            class="btn btn-success btn-lg"
+          >
+            ส่งข้อสอบ
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================================================
+         SECTION 5: EXAM RESULT
+         ================================================ -->
+
+    <section
+      id="exam-result-section"
+      class="hidden"
+    >
+
+      <div class="result-card">
+
+        <div class="login-logo">
+          GGN
+        </div>
+
+        <h2>
+          สรุปผลการทดสอบ
+        </h2>
+
+        <p class="mt-2">
+          ระบบบันทึกผลการสอบเรียบร้อยแล้ว
+        </p>
+
+
+        <div class="mt-4 mb-4">
+
+          <div class="text-secondary">
+            รายวิชา
+          </div>
+
+          <h3 id="result-subject-name">
+            -
+          </h3>
+
+        </div>
+
+
+        <div class="text-secondary">
+          คะแนนที่ได้รับ
+        </div>
+
+        <div
+          id="result-score"
+          class="result-score"
+        >
+          -
+        </div>
+
+
+        <div
+          id="result-status"
+          class="result-status"
+        >
+          -
+        </div>
+
+
+        <div class="card mt-4">
+
+          <div class="flex-between mb-2">
+
+            <span class="text-secondary">
+              จำนวนข้อสอบ
+            </span>
+
+            <strong id="result-total-questions">
+              -
+            </strong>
+
+          </div>
+
+          <div class="flex-between mb-2">
+
+            <span class="text-secondary">
+              ตอบถูก
+            </span>
+
+            <strong
+              id="result-correct-count"
+              class="text-success"
+            >
+              -
+            </strong>
+
+          </div>
+
+          <div class="flex-between">
+
+            <span class="text-secondary">
+              สถานะ
+            </span>
+
+            <strong id="result-exam-status">
+              -
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <div class="alert alert-info mt-4">
+
+          ผลการสอบถูกบันทึกในระบบแล้ว
+          กรุณากลับไปยังหน้ารายวิชาเพื่อดำเนินการต่อ
+
+        </div>
+
+
+        <button
+          type="button"
+          id="btn-back-to-dashboard"
+          class="btn btn-primary btn-block mt-3"
+        >
+          กลับหน้ารายวิชา
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================================================
+         SECTION 6: SYSTEM ERROR
+         ================================================ -->
+
+    <section
+      id="system-error-section"
+      class="hidden"
+    >
+
+      <div class="result-card">
+
+        <div class="empty-state-icon">
+          !
+        </div>
+
+        <h2>
+          ไม่สามารถดำเนินการได้
+        </h2>
+
+        <p
+          id="system-error-message"
+          class="mt-3"
+        >
+          เกิดข้อผิดพลาดในการเชื่อมต่อระบบ
+        </p>
+
+        <button
+          type="button"
+          id="btn-retry-system"
+          class="btn btn-primary mt-4"
+        >
+          ลองอีกครั้ง
+        </button>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <!-- ==================================================
+       CONFIRMATION MODAL
+       ================================================== -->
+
+  <div
+    id="confirm-modal"
+    class="modal-overlay hidden"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="confirm-modal-title"
+  >
+
+    <div class="modal">
+
+      <div class="modal-header">
+
+        <h3
+          id="confirm-modal-title"
+          class="modal-title"
+        >
+          ยืนยันการดำเนินการ
+        </h3>
+
+      </div>
+
+      <div
+        id="confirm-modal-message"
+        class="modal-body"
+      >
+        กรุณายืนยันการดำเนินการ
+      </div>
+
+      <div class="modal-footer">
+
+        <button
+          type="button"
+          id="btn-confirm-cancel"
+          class="btn btn-secondary"
+        >
+          ยกเลิก
+        </button>
+
+        <button
+          type="button"
+          id="btn-confirm-ok"
+          class="btn btn-primary"
+        >
+          ยืนยัน
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- ==================================================
+       APPLICATION SCRIPTS
+       ================================================== -->
+
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+
+</html>

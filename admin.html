@@ -1,0 +1,1573 @@
+
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="description"
+    content="GGN Test Admin - ระบบจัดการข้อสอบ"
+  >
+
+  <meta name="theme-color" content="#1d4ed8">
+
+  <title>GGN Test | Admin</title>
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+  <!-- ==================================================
+       HEADER
+       ================================================== -->
+
+  <header class="main-header">
+
+    <div class="brand">
+
+      <div class="brand-logo">
+        GGN
+      </div>
+
+      <div>
+        <div class="brand-name">
+          GGN TEST
+        </div>
+
+        <div class="brand-subtitle">
+          ระบบจัดการข้อสอบ
+        </div>
+      </div>
+
+    </div>
+
+
+    <div class="flex flex-center gap-3">
+
+      <div id="admin-connection-status">
+        <span class="badge badge-secondary">
+          กำลังตรวจสอบระบบ
+        </span>
+      </div>
+
+      <div class="text-right">
+
+        <strong id="admin-name">
+          Admin
+        </strong>
+
+        <div
+          id="admin-role"
+          class="text-muted"
+        >
+          ผู้ดูแลระบบ
+        </div>
+
+      </div>
+
+    </div>
+
+  </header>
+
+
+  <!-- ==================================================
+       ADMIN LAYOUT
+       ================================================== -->
+
+  <div class="admin-layout">
+
+
+    <!-- ================================================
+         SIDEBAR
+         ================================================ -->
+
+    <aside class="sidebar">
+
+      <div class="sidebar-title">
+        เมนูหลัก
+      </div>
+
+      <ul class="sidebar-menu">
+
+        <li>
+          <a
+            href="#dashboard"
+            class="sidebar-link active"
+            data-section="dashboard"
+          >
+            <span class="sidebar-icon">▦</span>
+            Dashboard
+          </a>
+        </li>
+
+        <li>
+          <a
+            href="#questions"
+            class="sidebar-link"
+            data-section="questions"
+          >
+            <span class="sidebar-icon">▤</span>
+            จัดการข้อสอบ
+          </a>
+        </li>
+
+        <li>
+          <a
+            href="#results"
+            class="sidebar-link"
+            data-section="results"
+          >
+            <span class="sidebar-icon">▥</span>
+            ผลการสอบ
+          </a>
+        </li>
+
+      </ul>
+
+
+      <div class="sidebar-title mt-4">
+        ระบบ
+      </div>
+
+      <ul class="sidebar-menu">
+
+        <li>
+          <a
+            href="index.html"
+            class="sidebar-link"
+            target="_blank"
+            rel="noopener"
+          >
+            <span class="sidebar-icon">↗</span>
+            หน้าผู้เข้าสอบ
+          </a>
+        </li>
+
+      </ul>
+
+
+      <div class="card mt-4">
+
+        <div class="text-secondary">
+          ระบบ
+        </div>
+
+        <strong>
+          GGN TEST
+        </strong>
+
+        <div class="text-muted">
+          Version 1.0.0
+        </div>
+
+      </div>
+
+    </aside>
+
+
+    <!-- ================================================
+         MAIN CONTENT
+         ================================================ -->
+
+    <main class="admin-main">
+
+      <div class="page-content">
+
+
+        <!-- ============================================
+             GLOBAL ALERT
+             ============================================ -->
+
+        <div
+          id="admin-global-alert"
+          class="alert hidden"
+          role="alert"
+          aria-live="polite"
+        ></div>
+
+
+        <!-- ============================================
+             LOADING
+             ============================================ -->
+
+        <div
+          id="admin-loading"
+          class="loading-overlay"
+        >
+
+          <div class="loading-content">
+
+            <div class="spinner"></div>
+
+            <p>
+              กำลังโหลดข้อมูลระบบ
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <!-- ============================================
+             SECTION 1: DASHBOARD
+             ============================================ -->
+
+        <section
+          id="dashboard-section"
+          class="admin-section"
+        >
+
+          <div class="page-header">
+
+            <div>
+
+              <h1 class="page-title">
+                Dashboard
+              </h1>
+
+              <p class="page-description">
+                ภาพรวมระบบทดสอบความรู้ GGN Test
+              </p>
+
+            </div>
+
+            <button
+              type="button"
+              id="btn-refresh-dashboard"
+              class="btn btn-secondary"
+            >
+              รีเฟรชข้อมูล
+            </button>
+
+          </div>
+
+
+          <!-- Statistics -->
+
+          <div class="stats-grid mb-4">
+
+            <div class="stat-card">
+
+              <div class="stat-label">
+                รายวิชาทั้งหมด
+              </div>
+
+              <div
+                id="stat-total-subjects"
+                class="stat-value"
+              >
+                9
+              </div>
+
+              <div class="stat-description">
+                วิชาในระบบ
+              </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+              <div class="stat-label">
+                ชุดข้อสอบ
+              </div>
+
+              <div
+                id="stat-total-examsets"
+                class="stat-value"
+              >
+                0
+              </div>
+
+              <div class="stat-description">
+                Exam Sets
+              </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+              <div class="stat-label">
+                ข้อสอบทั้งหมด
+              </div>
+
+              <div
+                id="stat-total-questions"
+                class="stat-value"
+              >
+                0
+              </div>
+
+              <div class="stat-description">
+                Questions
+              </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+              <div class="stat-label">
+                สถานะระบบ
+              </div>
+
+              <div
+                id="stat-system-status"
+                class="stat-value text-success"
+              >
+                -
+              </div>
+
+              <div class="stat-description">
+                Backend Connection
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- Subject Overview -->
+
+          <div class="card mb-4">
+
+            <div class="card-header">
+
+              <div class="card-title">
+                รายวิชาในระบบ
+              </div>
+
+              <span class="badge badge-info">
+                9 วิชา
+              </span>
+
+            </div>
+
+
+            <div
+              id="dashboard-subjects-loading"
+              class="text-center text-muted"
+            >
+              กำลังโหลดรายวิชา...
+            </div>
+
+
+            <div
+              id="dashboard-subject-list"
+              class="stats-grid"
+            >
+
+              <!-- Subject cards rendered by admin.js -->
+
+            </div>
+
+
+            <div
+              id="dashboard-subjects-empty"
+              class="empty-state hidden"
+            >
+
+              <div class="empty-state-title">
+                ไม่พบข้อมูลรายวิชา
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- Quick Actions -->
+
+          <div class="card">
+
+            <div class="card-header">
+
+              <div class="card-title">
+                การจัดการ
+              </div>
+
+            </div>
+
+            <div class="flex flex-wrap gap-3">
+
+              <button
+                type="button"
+                class="btn btn-primary"
+                data-section="questions"
+              >
+                จัดการข้อสอบ
+              </button>
+
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-section="results"
+              >
+                ดูผลการสอบ
+              </button>
+
+            </div>
+
+          </div>
+
+        </section>
+
+
+        <!-- ============================================
+             SECTION 2: QUESTION MANAGEMENT
+             ============================================ -->
+
+        <section
+          id="questions-section"
+          class="admin-section hidden"
+        >
+
+          <div class="page-header">
+
+            <div>
+
+              <h1 class="page-title">
+                จัดการข้อสอบ
+              </h1>
+
+              <p class="page-description">
+                เพิ่ม แก้ไข และจัดการคลังข้อสอบ
+              </p>
+
+            </div>
+
+            <button
+              type="button"
+              id="btn-add-question"
+              class="btn btn-primary"
+            >
+              + เพิ่มข้อสอบ
+            </button>
+
+          </div>
+
+
+          <!-- Question Filters -->
+
+          <div class="card mb-4">
+
+            <div class="card-header">
+
+              <div class="card-title">
+                ค้นหาและกรองข้อสอบ
+              </div>
+
+            </div>
+
+
+            <div class="form-row">
+
+              <div class="form-group">
+
+                <label
+                  for="filter-subject"
+                  class="form-label"
+                >
+                  รายวิชา
+                </label>
+
+                <select
+                  id="filter-subject"
+                  class="form-control"
+                >
+
+                  <option value="">
+                    ทุกรายวิชา
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="form-group">
+
+                <label
+                  for="filter-examset"
+                  class="form-label"
+                >
+                  ชุดข้อสอบ
+                </label>
+
+                <select
+                  id="filter-examset"
+                  class="form-control"
+                  disabled
+                >
+
+                  <option value="">
+                    เลือกรายวิชาก่อน
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="form-group">
+
+                <label
+                  for="filter-question-status"
+                  class="form-label"
+                >
+                  สถานะข้อสอบ
+                </label>
+
+                <select
+                  id="filter-question-status"
+                  class="form-control"
+                >
+
+                  <option value="">
+                    ทุกสถานะ
+                  </option>
+
+                  <option value="ACTIVE">
+                    ใช้งาน
+                  </option>
+
+                  <option value="INACTIVE">
+                    ปิดใช้งาน
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="form-group">
+
+                <label
+                  for="question-search"
+                  class="form-label"
+                >
+                  ค้นหาข้อความ
+                </label>
+
+                <input
+                  type="search"
+                  id="question-search"
+                  class="form-control"
+                  placeholder="ค้นหาคำถาม..."
+                >
+
+              </div>
+
+            </div>
+
+
+            <div class="flex flex-wrap gap-2">
+
+              <button
+                type="button"
+                id="btn-search-questions"
+                class="btn btn-primary"
+              >
+                ค้นหา
+              </button>
+
+              <button
+                type="button"
+                id="btn-reset-question-filter"
+                class="btn btn-secondary"
+              >
+                ล้างตัวกรอง
+              </button>
+
+            </div>
+
+          </div>
+
+
+          <!-- Question List -->
+
+          <div class="card">
+
+            <div class="card-header">
+
+              <div class="card-title">
+                รายการข้อสอบ
+              </div>
+
+              <span
+                id="question-count"
+                class="badge badge-info"
+              >
+                0 รายการ
+              </span>
+
+            </div>
+
+
+            <div
+              id="question-list-loading"
+              class="text-center text-muted"
+            >
+              กำลังโหลดข้อสอบ...
+            </div>
+
+
+            <div
+              id="question-table-container"
+              class="table-wrapper hidden"
+            >
+
+              <table class="table">
+
+                <thead>
+
+                  <tr>
+
+                    <th width="65">
+                      ลำดับ
+                    </th>
+
+                    <th>
+                      คำถาม
+                    </th>
+
+                    <th width="100">
+                      คะแนน
+                    </th>
+
+                    <th width="120">
+                      เฉลย
+                    </th>
+
+                    <th width="120">
+                      สถานะ
+                    </th>
+
+                    <th width="150">
+                      จัดการ
+                    </th>
+
+                  </tr>
+
+                </thead>
+
+                <tbody id="question-table-body">
+
+                  <!-- Questions rendered by admin.js -->
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+
+            <div
+              id="question-list-empty"
+              class="empty-state hidden"
+            >
+
+              <div class="empty-state-icon">
+                -
+              </div>
+
+              <div class="empty-state-title">
+                ไม่พบข้อสอบ
+              </div>
+
+              <p class="empty-state-description">
+                เลือกรายวิชาและชุดข้อสอบเพื่อแสดงรายการ
+              </p>
+
+            </div>
+
+          </div>
+
+        </section>
+
+
+        <!-- ============================================
+             SECTION 3: EXAM RESULTS
+             ============================================ -->
+
+        <section
+          id="results-section"
+          class="admin-section hidden"
+        >
+
+          <div class="page-header">
+
+            <div>
+
+              <h1 class="page-title">
+                ผลการสอบ
+              </h1>
+
+              <p class="page-description">
+                ตรวจสอบคะแนนและสถานะการสอบของผู้เข้าสอบ
+              </p>
+
+            </div>
+
+            <button
+              type="button"
+              id="btn-refresh-results"
+              class="btn btn-secondary"
+            >
+              รีเฟรชผลสอบ
+            </button>
+
+          </div>
+
+
+          <div class="card mb-4">
+
+            <div class="form-row">
+
+              <div class="form-group">
+
+                <label
+                  for="result-filter-subject"
+                  class="form-label"
+                >
+                  รายวิชา
+                </label>
+
+                <select
+                  id="result-filter-subject"
+                  class="form-control"
+                >
+
+                  <option value="">
+                    ทุกวิชา
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="form-group">
+
+                <label
+                  for="result-filter-cohort"
+                  class="form-label"
+                >
+                  รุ่นการทดสอบ
+                </label>
+
+                <select
+                  id="result-filter-cohort"
+                  class="form-control"
+                >
+
+                  <option value="">
+                    ทุกรุ่น
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="form-group">
+
+                <label
+                  for="result-search"
+                  class="form-label"
+                >
+                  ค้นหาผู้เข้าสอบ
+                </label>
+
+                <input
+                  type="search"
+                  id="result-search"
+                  class="form-control"
+                  placeholder="ชื่อหรือรหัสพนักงาน"
+                >
+
+              </div>
+
+            </div>
+
+            <button
+              type="button"
+              id="btn-search-results"
+              class="btn btn-primary"
+            >
+              ค้นหาผลสอบ
+            </button>
+
+          </div>
+
+
+          <div class="card">
+
+            <div class="card-header">
+
+              <div class="card-title">
+                รายการผลสอบ
+              </div>
+
+              <span
+                id="result-count"
+                class="badge badge-info"
+              >
+                0 รายการ
+              </span>
+
+            </div>
+
+
+            <div
+              id="result-list-loading"
+              class="text-center text-muted"
+            >
+              กำลังโหลดผลสอบ...
+            </div>
+
+
+            <div
+              id="result-table-container"
+              class="table-wrapper hidden"
+            >
+
+              <table class="table">
+
+                <thead>
+
+                  <tr>
+
+                    <th>
+                      ผู้เข้าสอบ
+                    </th>
+
+                    <th>
+                      รายวิชา
+                    </th>
+
+                    <th>
+                      รุ่น
+                    </th>
+
+                    <th>
+                      คะแนน
+                    </th>
+
+                    <th>
+                      สถานะ
+                    </th>
+
+                    <th>
+                      วันที่สอบ
+                    </th>
+
+                    <th>
+                      จัดการ
+                    </th>
+
+                  </tr>
+
+                </thead>
+
+                <tbody id="result-table-body">
+
+                  <!-- Results rendered by admin.js -->
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+
+            <div
+              id="result-list-empty"
+              class="empty-state hidden"
+            >
+
+              <div class="empty-state-title">
+                ยังไม่มีข้อมูลผลสอบ
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
+
+
+      </div>
+
+    </main>
+
+  </div>
+
+
+  <!-- ==================================================
+       QUESTION MODAL
+       ================================================== -->
+
+  <div
+    id="question-modal"
+    class="modal-overlay hidden"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="question-modal-title"
+  >
+
+    <div class="modal modal-lg">
+
+      <div class="modal-header">
+
+        <h3
+          id="question-modal-title"
+          class="modal-title"
+        >
+          เพิ่มข้อสอบ
+        </h3>
+
+        <button
+          type="button"
+          id="btn-close-question-modal"
+          class="btn btn-secondary btn-sm"
+          aria-label="ปิด"
+        >
+          ปิด
+        </button>
+
+      </div>
+
+
+      <form id="question-form">
+
+        <div class="modal-body">
+
+          <input
+            type="hidden"
+            id="question-id"
+            name="questionId"
+          >
+
+
+          <!-- Subject -->
+
+          <div class="form-group">
+
+            <label
+              for="question-subject"
+              class="form-label"
+            >
+              รายวิชา
+              <span class="required">*</span>
+            </label>
+
+            <select
+              id="question-subject"
+              name="subjectId"
+              class="form-control"
+              required
+            >
+
+              <option value="">
+                เลือกรายวิชา
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <!-- Exam Set -->
+
+          <div class="form-group">
+
+            <label
+              for="question-examset"
+              class="form-label"
+            >
+              ชุดข้อสอบ
+              <span class="required">*</span>
+            </label>
+
+            <select
+              id="question-examset"
+              name="examSetId"
+              class="form-control"
+              required
+              disabled
+            >
+
+              <option value="">
+                เลือกรายวิชาก่อน
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <!-- Question Number -->
+
+          <div class="form-row">
+
+            <div class="form-group">
+
+              <label
+                for="question-number"
+                class="form-label"
+              >
+                ลำดับข้อ
+                <span class="required">*</span>
+              </label>
+
+              <input
+                type="number"
+                id="question-number"
+                name="questionNo"
+                class="form-control"
+                min="1"
+                step="1"
+                required
+              >
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label
+                for="question-score"
+                class="form-label"
+              >
+                คะแนน
+                <span class="required">*</span>
+              </label>
+
+              <input
+                type="number"
+                id="question-score"
+                name="score"
+                class="form-control"
+                min="0"
+                step="0.5"
+                value="1"
+                required
+              >
+
+            </div>
+
+          </div>
+
+
+          <!-- Question Text -->
+
+          <div class="form-group">
+
+            <label
+              for="question-text"
+              class="form-label"
+            >
+              คำถาม
+              <span class="required">*</span>
+            </label>
+
+            <textarea
+              id="question-text"
+              name="questionText"
+              class="form-control"
+              rows="4"
+              required
+              placeholder="พิมพ์ข้อความคำถาม..."
+            ></textarea>
+
+          </div>
+
+
+          <!-- Question Image URL -->
+
+          <div class="form-group">
+
+            <label
+              for="question-image-url"
+              class="form-label"
+            >
+              URL รูปภาพประกอบ
+            </label>
+
+            <input
+              type="url"
+              id="question-image-url"
+              name="questionImageUrl"
+              class="form-control"
+              placeholder="https://..."
+            >
+
+            <div class="form-hint">
+              เว้นว่างได้หากไม่มีรูปภาพประกอบ
+            </div>
+
+          </div>
+
+
+          <!-- Choices -->
+
+          <div class="section">
+
+            <h3 class="section-title">
+              ตัวเลือกคำตอบ
+            </h3>
+
+
+            <div class="form-group">
+
+              <label
+                for="choice-a"
+                class="form-label"
+              >
+                ตัวเลือก A
+                <span class="required">*</span>
+              </label>
+
+              <textarea
+                id="choice-a"
+                name="choiceA"
+                class="form-control"
+                rows="2"
+                required
+              ></textarea>
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label
+                for="choice-b"
+                class="form-label"
+              >
+                ตัวเลือก B
+                <span class="required">*</span>
+              </label>
+
+              <textarea
+                id="choice-b"
+                name="choiceB"
+                class="form-control"
+                rows="2"
+                required
+              ></textarea>
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label
+                for="choice-c"
+                class="form-label"
+              >
+                ตัวเลือก C
+                <span class="required">*</span>
+              </label>
+
+              <textarea
+                id="choice-c"
+                name="choiceC"
+                class="form-control"
+                rows="2"
+                required
+              ></textarea>
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label
+                for="choice-d"
+                class="form-label"
+              >
+                ตัวเลือก D
+                <span class="required">*</span>
+              </label>
+
+              <textarea
+                id="choice-d"
+                name="choiceD"
+                class="form-control"
+                rows="2"
+                required
+              ></textarea>
+
+            </div>
+
+          </div>
+
+
+          <!-- Correct Answer -->
+
+          <div class="form-group">
+
+            <label
+              for="correct-answer"
+              class="form-label"
+            >
+              เฉลยคำตอบ
+              <span class="required">*</span>
+            </label>
+
+            <select
+              id="correct-answer"
+              name="correctAnswer"
+              class="form-control"
+              required
+            >
+
+              <option value="">
+                เลือกคำตอบที่ถูกต้อง
+              </option>
+
+              <option value="A">
+                A
+              </option>
+
+              <option value="B">
+                B
+              </option>
+
+              <option value="C">
+                C
+              </option>
+
+              <option value="D">
+                D
+              </option>
+
+            </select>
+
+            <div class="form-hint">
+              เฉลยจะถูกจัดเก็บใน Backend
+              และไม่ส่งไปยังหน้าผู้เข้าสอบ
+            </div>
+
+          </div>
+
+
+          <!-- Explanation -->
+
+          <div class="form-group">
+
+            <label
+              for="question-explanation"
+              class="form-label"
+            >
+              คำอธิบายเพิ่มเติม
+            </label>
+
+            <textarea
+              id="question-explanation"
+              name="explanation"
+              class="form-control"
+              rows="3"
+              placeholder="คำอธิบายสำหรับเจ้าหน้าที่..."
+            ></textarea>
+
+          </div>
+
+
+          <!-- Status -->
+
+          <div class="form-group">
+
+            <label
+              for="question-status"
+              class="form-label"
+            >
+              สถานะข้อสอบ
+            </label>
+
+            <select
+              id="question-status"
+              name="status"
+              class="form-control"
+            >
+
+              <option value="ACTIVE">
+                ใช้งาน
+              </option>
+
+              <option value="INACTIVE">
+                ปิดใช้งาน
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div
+            id="question-form-error"
+            class="alert alert-danger hidden"
+            role="alert"
+          ></div>
+
+        </div>
+
+
+        <div class="modal-footer">
+
+          <button
+            type="button"
+            id="btn-cancel-question"
+            class="btn btn-secondary"
+          >
+            ยกเลิก
+          </button>
+
+          <button
+            type="submit"
+            id="btn-save-question"
+            class="btn btn-primary"
+          >
+            บันทึกข้อสอบ
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+
+  </div>
+
+
+  <!-- ==================================================
+       SCORE ADJUSTMENT MODAL
+       ================================================== -->
+
+  <div
+    id="score-modal"
+    class="modal-overlay hidden"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="score-modal-title"
+  >
+
+    <div class="modal">
+
+      <div class="modal-header">
+
+        <h3
+          id="score-modal-title"
+          class="modal-title"
+        >
+          ปรับคะแนนสอบ
+        </h3>
+
+        <button
+          type="button"
+          id="btn-close-score-modal"
+          class="btn btn-secondary btn-sm"
+        >
+          ปิด
+        </button>
+
+      </div>
+
+
+      <form id="score-form">
+
+        <div class="modal-body">
+
+          <input
+            type="hidden"
+            id="adjust-attempt-id"
+          >
+
+
+          <div class="form-group">
+
+            <label class="form-label">
+              ผู้เข้าสอบ
+            </label>
+
+            <strong id="adjust-examinee-name">
+              -
+            </strong>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label class="form-label">
+              รายวิชา
+            </label>
+
+            <strong id="adjust-subject-name">
+              -
+            </strong>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label
+              for="adjust-score"
+              class="form-label"
+            >
+              คะแนนใหม่
+              <span class="required">*</span>
+            </label>
+
+            <input
+              type="number"
+              id="adjust-score"
+              class="form-control"
+              min="0"
+              step="0.5"
+              required
+            >
+
+            <div class="form-hint">
+              คะแนนต้องไม่เกินคะแนนเต็ม
+            </div>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label
+              for="adjust-reason"
+              class="form-label"
+            >
+              เหตุผลในการปรับคะแนน
+              <span class="required">*</span>
+            </label>
+
+            <textarea
+              id="adjust-reason"
+              class="form-control"
+              rows="3"
+              required
+              placeholder="ระบุเหตุผลในการปรับคะแนน..."
+            ></textarea>
+
+          </div>
+
+
+          <div
+            id="score-form-error"
+            class="alert alert-danger hidden"
+          ></div>
+
+        </div>
+
+
+        <div class="modal-footer">
+
+          <button
+            type="button"
+            id="btn-cancel-score"
+            class="btn btn-secondary"
+          >
+            ยกเลิก
+          </button>
+
+          <button
+            type="submit"
+            id="btn-save-score"
+            class="btn btn-primary"
+          >
+            บันทึกคะแนน
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+
+  </div>
+
+
+  <!-- ==================================================
+       CONFIRMATION MODAL
+       ================================================== -->
+
+  <div
+    id="admin-confirm-modal"
+    class="modal-overlay hidden"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="admin-confirm-title"
+  >
+
+    <div class="modal">
+
+      <div class="modal-header">
+
+        <h3
+          id="admin-confirm-title"
+          class="modal-title"
+        >
+          ยืนยันการดำเนินการ
+        </h3>
+
+      </div>
+
+
+      <div
+        id="admin-confirm-message"
+        class="modal-body"
+      >
+        กรุณายืนยันการดำเนินการ
+      </div>
+
+
+      <div class="modal-footer">
+
+        <button
+          type="button"
+          id="btn-admin-confirm-cancel"
+          class="btn btn-secondary"
+        >
+          ยกเลิก
+        </button>
+
+        <button
+          type="button"
+          id="btn-admin-confirm-ok"
+          class="btn btn-danger"
+        >
+          ยืนยัน
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- ==================================================
+       SCRIPTS
+       ================================================== -->
+
+  <script src="js/api.js"></script>
+  <script src="js/admin.js"></script>
+
+</body>
+
+</html>
