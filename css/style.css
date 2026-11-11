@@ -1489,3 +1489,163 @@ textarea.form-control {
     transition-duration: .01ms !important;
   }
 }
+
+
+/* =========================================
+   GGN TEST - DASHBOARD SUBJECT CARDS
+========================================= */
+
+#dashboard-subject-list.subject-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    width: 100%;
+}
+
+.subject-card {
+    min-width: 0;
+    padding: 17px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 15px;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.045);
+    transition: border-color .2s ease, box-shadow .2s ease,
+                transform .2s ease;
+}
+
+.subject-card:hover {
+    border-color: #facc15;
+    box-shadow: 0 5px 16px rgba(15, 23, 42, 0.08);
+    transform: translateY(-2px);
+}
+
+.subject-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 17px;
+}
+
+.subject-card-info {
+    min-width: 0;
+}
+
+.subject-card-name {
+    color: #171717;
+    font-size: 15px;
+    font-weight: 750;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.subject-card-meta {
+    margin-top: 4px;
+    color: #888888;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .4px;
+}
+
+.subject-card-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-top: 12px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.exam-toggle {
+    position: relative;
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    width: 52px;
+    height: 29px;
+    cursor: pointer;
+}
+
+.exam-toggle input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+
+.exam-toggle-track {
+    position: absolute;
+    inset: 0;
+    border-radius: 30px;
+    background: #d1d5db;
+    transition: background .22s ease;
+}
+
+.exam-toggle-track::before {
+    content: "";
+    position: absolute;
+    width: 21px;
+    height: 21px;
+    left: 4px;
+    top: 4px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, .2);
+    transition: transform .22s ease;
+}
+
+.exam-toggle input:checked + .exam-toggle-track {
+    background: #facc15;
+}
+
+.exam-toggle input:checked + .exam-toggle-track::before {
+    transform: translateX(23px);
+    background: #171717;
+}
+
+.exam-toggle input:focus-visible + .exam-toggle-track {
+    outline: 3px solid rgba(250, 204, 21, .35);
+    outline-offset: 3px;
+}
+
+.exam-toggle input:disabled + .exam-toggle-track {
+    opacity: .45;
+    cursor: not-allowed;
+}
+
+.exam-toggle-label {
+    margin-right: auto;
+    color: #333333;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.subject-manage-btn {
+    min-height: 34px;
+    padding: 7px 13px;
+    border: 0;
+    border-radius: 8px;
+    background: #171717;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .2s ease, transform .2s ease;
+}
+
+.subject-manage-btn:hover {
+    background: #3f3f3f;
+    transform: translateY(-1px);
+}
+
+@media (max-width: 640px) {
+    #dashboard-subject-list.subject-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .subject-card {
+        padding: 14px;
+    }
+}
