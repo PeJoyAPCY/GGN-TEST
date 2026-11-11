@@ -1,1573 +1,1235 @@
-
 <!DOCTYPE html>
 <html lang="th">
-
 <head>
   <meta charset="UTF-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
-  <meta
-    name="description"
-    content="GGN Test Admin - ระบบจัดการข้อสอบ"
-  >
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="GGN Test Admin - ระบบจัดการข้อสอบ">
   <meta name="theme-color" content="#1d4ed8">
 
   <title>GGN Test | Admin</title>
 
   <link rel="stylesheet" href="css/style.css">
+
+  <style>
+    /* =========================================
+       ADMIN COMPACT UI
+       ========================================= */
+
+    .admin-layout {
+      display: flex;
+      min-height: calc(100vh - 68px);
+    }
+
+    .admin-main {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .page-content {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .admin-section {
+      width: 100%;
+    }
+
+    .admin-section.hidden,
+    .hidden {
+      display: none !important;
+    }
+
+    .subject-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .subject-card {
+      min-width: 0;
+      padding: 13px;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      background: #fff;
+    }
+
+    .subject-card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .subject-card-info {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .subject-card-name {
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    .subject-card-meta {
+      margin-top: 4px;
+      color: #64748b;
+      font-size: 12px;
+    }
+
+    .subject-card-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid #f1f5f9;
+    }
+
+    .exam-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      cursor: pointer;
+      user-select: none;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .exam-toggle input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .exam-toggle-track {
+      position: relative;
+      display: inline-block;
+      width: 39px;
+      height: 22px;
+      border-radius: 20px;
+      background: #cbd5e1;
+      transition: background .2s ease;
+      flex-shrink: 0;
+    }
+
+    .exam-toggle-track::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #fff;
+      transition: transform .2s ease;
+      box-shadow: 0 1px 3px rgba(0,0,0,.18);
+    }
+
+    .exam-toggle input:checked + .exam-toggle-track {
+      background: #16a34a;
+    }
+
+    .exam-toggle input:checked + .exam-toggle-track::after {
+      transform: translateX(17px);
+    }
+
+    .exam-toggle input:focus-visible + .exam-toggle-track {
+      outline: 3px solid rgba(37,99,235,.25);
+    }
+
+    .exam-toggle input:disabled + .exam-toggle-track {
+      opacity: .5;
+      cursor: not-allowed;
+    }
+
+    .subject-manage-btn {
+      padding: 6px 10px !important;
+      font-size: 12px !important;
+      white-space: nowrap;
+    }
+
+    .summary-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: end;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .summary-toolbar .form-group {
+      flex: 1;
+      min-width: 170px;
+      margin-bottom: 0;
+    }
+
+    .summary-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .summary-tab {
+      padding: 9px 13px;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      background: transparent;
+      color: #64748b;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .summary-tab.active {
+      color: #1d4ed8;
+      border-bottom-color: #1d4ed8;
+      font-weight: 700;
+    }
+
+    .summary-table-wrap {
+      overflow-x: auto;
+      width: 100%;
+    }
+
+    .summary-table-wrap table {
+      min-width: 700px;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+      width: 100%;
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .table th,
+    .table td {
+      padding: 9px 10px;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    .table td.question-cell {
+      white-space: normal;
+      min-width: 220px;
+    }
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .page-title {
+      margin: 0;
+      font-size: 21px;
+    }
+
+    .page-description {
+      margin: 4px 0 0;
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    .admin-loading-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,.94);
+    }
+
+    .admin-loading-screen.hidden {
+      display: none !important;
+    }
+
+    .admin-loading-screen .loading-content {
+      text-align: center;
+    }
+
+    .admin-loading-screen p {
+      margin-top: 10px;
+      color: #64748b;
+      font-size: 13px;
+    }
+
+    .admin-connection {
+      font-size: 12px;
+    }
+
+    .summary-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .summary-stat {
+      padding: 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 9px;
+      background: #fff;
+    }
+
+    .summary-stat-label {
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .summary-stat-value {
+      margin-top: 5px;
+      font-size: 21px;
+      font-weight: 700;
+    }
+
+    .summary-section-content {
+      min-width: 0;
+    }
+
+    @media (max-width: 900px) {
+      .admin-layout {
+        display: block;
+      }
+
+      .sidebar {
+        width: 100%;
+      }
+
+      .sidebar-menu {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+      }
+
+      .sidebar-menu li {
+        list-style: none;
+      }
+
+      .sidebar-title,
+      .sidebar > .card {
+        display: none;
+      }
+
+      .sidebar-link {
+        padding: 8px 10px;
+      }
+
+      .summary-stat-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 600px) {
+      .page-content {
+        padding: 12px;
+      }
+
+      .page-header {
+        align-items: flex-start;
+      }
+
+      .page-title {
+        font-size: 18px;
+      }
+
+      .page-description {
+        font-size: 12px;
+      }
+
+      .subject-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .subject-card {
+        padding: 11px;
+      }
+
+      .summary-toolbar {
+        align-items: stretch;
+      }
+
+      .summary-toolbar .form-group {
+        min-width: 100%;
+      }
+
+      .main-header {
+        padding: 10px 12px;
+      }
+
+      .brand-subtitle {
+        font-size: 11px;
+      }
+
+      .admin-connection {
+        display: none;
+      }
+
+      .stats-grid {
+        gap: 8px;
+      }
+
+      .stat-card {
+        padding: 10px;
+      }
+
+      .stat-value {
+        font-size: 20px;
+      }
+
+      .modal {
+        width: calc(100% - 20px);
+        max-height: 92vh;
+        overflow-y: auto;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 
 <body>
 
-  <!-- ==================================================
-       HEADER
-       ================================================== -->
-
+  <!-- HEADER -->
   <header class="main-header">
-
     <div class="brand">
-
-      <div class="brand-logo">
-        GGN
-      </div>
-
+      <div class="brand-logo">GGN</div>
       <div>
-        <div class="brand-name">
-          GGN TEST
-        </div>
-
-        <div class="brand-subtitle">
-          ระบบจัดการข้อสอบ
-        </div>
+        <div class="brand-name">GGN TEST</div>
+        <div class="brand-subtitle">ระบบจัดการข้อสอบ</div>
       </div>
-
     </div>
 
-
     <div class="flex flex-center gap-3">
-
-      <div id="admin-connection-status">
-        <span class="badge badge-secondary">
-          กำลังตรวจสอบระบบ
-        </span>
+      <div id="admin-connection-status" class="admin-connection">
+        <span class="badge badge-secondary">กำลังตรวจสอบระบบ</span>
       </div>
 
       <div class="text-right">
-
-        <strong id="admin-name">
-          Admin
-        </strong>
-
-        <div
-          id="admin-role"
-          class="text-muted"
-        >
-          ผู้ดูแลระบบ
-        </div>
-
+        <strong id="admin-name">Admin</strong>
+        <div id="admin-role" class="text-muted">ผู้ดูแลระบบ</div>
       </div>
-
     </div>
-
   </header>
-
-
-  <!-- ==================================================
-       ADMIN LAYOUT
-       ================================================== -->
 
   <div class="admin-layout">
 
-
-    <!-- ================================================
-         SIDEBAR
-         ================================================ -->
-
+    <!-- SIDEBAR -->
     <aside class="sidebar">
-
-      <div class="sidebar-title">
-        เมนูหลัก
-      </div>
+      <div class="sidebar-title">เมนูหลัก</div>
 
       <ul class="sidebar-menu">
-
         <li>
-          <a
-            href="#dashboard"
-            class="sidebar-link active"
-            data-section="dashboard"
-          >
+          <a href="#dashboard" class="sidebar-link active"
+             data-section="dashboard">
             <span class="sidebar-icon">▦</span>
-            Dashboard
+            หน้าแรก
           </a>
         </li>
 
         <li>
-          <a
-            href="#questions"
-            class="sidebar-link"
-            data-section="questions"
-          >
-            <span class="sidebar-icon">▤</span>
-            จัดการข้อสอบ
-          </a>
-        </li>
-
-        <li>
-          <a
-            href="#results"
-            class="sidebar-link"
-            data-section="results"
-          >
+          <a href="#results" class="sidebar-link"
+             data-section="results">
             <span class="sidebar-icon">▥</span>
             ผลการสอบ
           </a>
         </li>
 
+        <li>
+          <a href="#summary" class="sidebar-link"
+             data-section="summary">
+            <span class="sidebar-icon">▤</span>
+            สรุปผล
+          </a>
+        </li>
       </ul>
 
-
-      <div class="sidebar-title mt-4">
-        ระบบ
-      </div>
+      <div class="sidebar-title mt-4">ระบบ</div>
 
       <ul class="sidebar-menu">
-
         <li>
-          <a
-            href="index.html"
-            class="sidebar-link"
-            target="_blank"
-            rel="noopener"
-          >
+          <a href="index.html" class="sidebar-link"
+             target="_blank" rel="noopener">
             <span class="sidebar-icon">↗</span>
             หน้าผู้เข้าสอบ
           </a>
         </li>
-
       </ul>
 
-
       <div class="card mt-4">
-
-        <div class="text-secondary">
-          ระบบ
-        </div>
-
-        <strong>
-          GGN TEST
-        </strong>
-
-        <div class="text-muted">
-          Version 1.0.0
-        </div>
-
+        <div class="text-secondary">ระบบ</div>
+        <strong>GGN TEST</strong>
+        <div class="text-muted">Version 2.0.0</div>
       </div>
-
     </aside>
 
-
-    <!-- ================================================
-         MAIN CONTENT
-         ================================================ -->
-
+    <!-- MAIN -->
     <main class="admin-main">
-
       <div class="page-content">
 
+        <div id="admin-global-alert"
+             class="alert hidden"
+             role="alert"
+             aria-live="polite"></div>
 
-        <!-- ============================================
-             GLOBAL ALERT
-             ============================================ -->
-
-        <div
-          id="admin-global-alert"
-          class="alert hidden"
-          role="alert"
-          aria-live="polite"
-        ></div>
-
-
-        <!-- ============================================
-             LOADING
-             ============================================ -->
-
-        <div
-          id="admin-loading"
-          class="loading-overlay"
-        >
-
+        <!-- GLOBAL LOADING -->
+        <div id="admin-loading"
+             class="admin-loading-screen">
           <div class="loading-content">
-
             <div class="spinner"></div>
-
-            <p>
-              กำลังโหลดข้อมูลระบบ
-            </p>
-
+            <p>กำลังโหลดข้อมูลระบบ</p>
           </div>
-
         </div>
 
-
-        <!-- ============================================
-             SECTION 1: DASHBOARD
-             ============================================ -->
-
-        <section
-          id="dashboard-section"
-          class="admin-section"
-        >
+        <!-- ==========================================
+             PAGE 1: DASHBOARD / SUBJECTS
+             ========================================== -->
+        <section id="dashboard-section" class="admin-section">
 
           <div class="page-header">
-
             <div>
-
-              <h1 class="page-title">
-                Dashboard
-              </h1>
-
+              <h1 class="page-title">จัดการรายวิชา</h1>
               <p class="page-description">
-                ภาพรวมระบบทดสอบความรู้ GGN Test
+                เปิด–ปิดการสอบและจัดการชุดข้อสอบทั้ง 9 วิชา
               </p>
-
             </div>
 
-            <button
-              type="button"
-              id="btn-refresh-dashboard"
-              class="btn btn-secondary"
-            >
-              รีเฟรชข้อมูล
+            <button type="button" id="btn-refresh-dashboard"
+                    class="btn btn-secondary">
+              รีเฟรช
             </button>
-
           </div>
-
-
-          <!-- Statistics -->
 
           <div class="stats-grid mb-4">
-
             <div class="stat-card">
-
-              <div class="stat-label">
-                รายวิชาทั้งหมด
-              </div>
-
-              <div
-                id="stat-total-subjects"
-                class="stat-value"
-              >
-                9
-              </div>
-
-              <div class="stat-description">
-                วิชาในระบบ
-              </div>
-
+              <div class="stat-label">รายวิชาทั้งหมด</div>
+              <div id="stat-total-subjects" class="stat-value">9</div>
+              <div class="stat-description">วิชาในระบบ</div>
             </div>
 
-
             <div class="stat-card">
-
-              <div class="stat-label">
-                ชุดข้อสอบ
-              </div>
-
-              <div
-                id="stat-total-examsets"
-                class="stat-value"
-              >
-                0
-              </div>
-
-              <div class="stat-description">
-                Exam Sets
-              </div>
-
+              <div class="stat-label">ชุดข้อสอบ</div>
+              <div id="stat-total-examsets" class="stat-value">0</div>
+              <div class="stat-description">Exam Sets</div>
             </div>
 
-
             <div class="stat-card">
-
-              <div class="stat-label">
-                ข้อสอบทั้งหมด
-              </div>
-
-              <div
-                id="stat-total-questions"
-                class="stat-value"
-              >
-                0
-              </div>
-
-              <div class="stat-description">
-                Questions
-              </div>
-
+              <div class="stat-label">ข้อสอบทั้งหมด</div>
+              <div id="stat-total-questions" class="stat-value">0</div>
+              <div class="stat-description">Questions</div>
             </div>
 
-
             <div class="stat-card">
-
-              <div class="stat-label">
-                สถานะระบบ
-              </div>
-
-              <div
-                id="stat-system-status"
-                class="stat-value text-success"
-              >
-                -
-              </div>
-
-              <div class="stat-description">
-                Backend Connection
-              </div>
-
+              <div class="stat-label">สถานะระบบ</div>
+              <div id="stat-system-status"
+                   class="stat-value text-success">-</div>
+              <div class="stat-description">Backend Connection</div>
             </div>
-
           </div>
 
-
-          <!-- Subject Overview -->
-
           <div class="card mb-4">
-
             <div class="card-header">
-
-              <div class="card-title">
-                รายวิชาในระบบ
-              </div>
-
-              <span class="badge badge-info">
-                9 วิชา
-              </span>
-
+              <div class="card-title">รายวิชาในระบบ</div>
+              <span class="badge badge-info">9 วิชา</span>
             </div>
 
-
-            <div
-              id="dashboard-subjects-loading"
-              class="text-center text-muted"
-            >
+            <div id="dashboard-subjects-loading"
+                 class="text-center text-muted">
               กำลังโหลดรายวิชา...
             </div>
 
-
-            <div
-              id="dashboard-subject-list"
-              class="stats-grid"
-            >
-
-              <!-- Subject cards rendered by admin.js -->
-
+            <div id="dashboard-subject-list"
+                 class="subject-grid">
+              <!-- Rendered by admin.js -->
             </div>
 
-
-            <div
-              id="dashboard-subjects-empty"
-              class="empty-state hidden"
-            >
-
+            <div id="dashboard-subjects-empty"
+                 class="empty-state hidden">
               <div class="empty-state-title">
                 ไม่พบข้อมูลรายวิชา
               </div>
-
             </div>
-
           </div>
 
-
-          <!-- Quick Actions -->
-
           <div class="card">
-
             <div class="card-header">
-
-              <div class="card-title">
-                การจัดการ
-              </div>
-
+              <div class="card-title">การจัดการ</div>
             </div>
 
-            <div class="flex flex-wrap gap-3">
-
-              <button
-                type="button"
-                class="btn btn-primary"
-                data-section="questions"
-              >
-                จัดการข้อสอบ
-              </button>
-
-              <button
-                type="button"
-                class="btn btn-secondary"
-                data-section="results"
-              >
+            <div class="flex flex-wrap gap-2">
+              <button type="button" class="btn btn-primary"
+                      data-section="results">
                 ดูผลการสอบ
               </button>
 
+              <button type="button" class="btn btn-secondary"
+                      data-section="summary">
+                ดูสรุปผล
+              </button>
             </div>
-
           </div>
-
         </section>
 
-
-        <!-- ============================================
-             SECTION 2: QUESTION MANAGEMENT
-             ============================================ -->
-
-        <section
-          id="questions-section"
-          class="admin-section hidden"
-        >
+        <!-- ==========================================
+             PAGE 2: QUESTION MANAGEMENT
+             ========================================== -->
+        <section id="questions-section"
+                 class="admin-section hidden">
 
           <div class="page-header">
-
             <div>
-
-              <h1 class="page-title">
-                จัดการข้อสอบ
-              </h1>
-
+              <h1 class="page-title">จัดการข้อสอบ</h1>
               <p class="page-description">
                 เพิ่ม แก้ไข และจัดการคลังข้อสอบ
               </p>
-
             </div>
 
-            <button
-              type="button"
-              id="btn-add-question"
-              class="btn btn-primary"
-            >
+            <button type="button" id="btn-add-question"
+                    class="btn btn-primary">
               + เพิ่มข้อสอบ
             </button>
-
           </div>
 
-
-          <!-- Question Filters -->
-
           <div class="card mb-4">
-
             <div class="card-header">
-
-              <div class="card-title">
-                ค้นหาและกรองข้อสอบ
-              </div>
-
+              <div class="card-title">ค้นหาและกรองข้อสอบ</div>
             </div>
-
 
             <div class="form-row">
-
               <div class="form-group">
-
-                <label
-                  for="filter-subject"
-                  class="form-label"
-                >
+                <label for="filter-subject" class="form-label">
                   รายวิชา
                 </label>
-
-                <select
-                  id="filter-subject"
-                  class="form-control"
-                >
-
-                  <option value="">
-                    ทุกรายวิชา
-                  </option>
-
+                <select id="filter-subject" class="form-control">
+                  <option value="">ทุกรายวิชา</option>
                 </select>
-
               </div>
 
-
               <div class="form-group">
-
-                <label
-                  for="filter-examset"
-                  class="form-label"
-                >
+                <label for="filter-examset" class="form-label">
                   ชุดข้อสอบ
                 </label>
-
-                <select
-                  id="filter-examset"
-                  class="form-control"
-                  disabled
-                >
-
-                  <option value="">
-                    เลือกรายวิชาก่อน
-                  </option>
-
+                <select id="filter-examset"
+                        class="form-control" disabled>
+                  <option value="">เลือกรายวิชาก่อน</option>
                 </select>
-
               </div>
 
-
               <div class="form-group">
-
-                <label
-                  for="filter-question-status"
-                  class="form-label"
-                >
+                <label for="filter-question-status"
+                       class="form-label">
                   สถานะข้อสอบ
                 </label>
-
-                <select
-                  id="filter-question-status"
-                  class="form-control"
-                >
-
-                  <option value="">
-                    ทุกสถานะ
-                  </option>
-
-                  <option value="ACTIVE">
-                    ใช้งาน
-                  </option>
-
-                  <option value="INACTIVE">
-                    ปิดใช้งาน
-                  </option>
-
+                <select id="filter-question-status"
+                        class="form-control">
+                  <option value="">ทุกสถานะ</option>
+                  <option value="ACTIVE">ใช้งาน</option>
+                  <option value="INACTIVE">ปิดใช้งาน</option>
                 </select>
-
               </div>
-
 
               <div class="form-group">
-
-                <label
-                  for="question-search"
-                  class="form-label"
-                >
+                <label for="question-search" class="form-label">
                   ค้นหาข้อความ
                 </label>
-
-                <input
-                  type="search"
-                  id="question-search"
-                  class="form-control"
-                  placeholder="ค้นหาคำถาม..."
-                >
-
+                <input type="search" id="question-search"
+                       class="form-control"
+                       placeholder="ค้นหาคำถาม...">
               </div>
-
             </div>
 
-
             <div class="flex flex-wrap gap-2">
-
-              <button
-                type="button"
-                id="btn-search-questions"
-                class="btn btn-primary"
-              >
+              <button type="button" id="btn-search-questions"
+                      class="btn btn-primary">
                 ค้นหา
               </button>
 
-              <button
-                type="button"
-                id="btn-reset-question-filter"
-                class="btn btn-secondary"
-              >
+              <button type="button"
+                      id="btn-reset-question-filter"
+                      class="btn btn-secondary">
                 ล้างตัวกรอง
               </button>
-
             </div>
-
           </div>
 
-
-          <!-- Question List -->
-
           <div class="card">
-
             <div class="card-header">
-
-              <div class="card-title">
-                รายการข้อสอบ
-              </div>
-
-              <span
-                id="question-count"
-                class="badge badge-info"
-              >
-                0 รายการ
-              </span>
-
+              <div class="card-title">รายการข้อสอบ</div>
+              <span id="question-count"
+                    class="badge badge-info">0 รายการ</span>
             </div>
 
-
-            <div
-              id="question-list-loading"
-              class="text-center text-muted"
-            >
+            <div id="question-list-loading"
+                 class="text-center text-muted">
               กำลังโหลดข้อสอบ...
             </div>
 
-
-            <div
-              id="question-table-container"
-              class="table-wrapper hidden"
-            >
-
+            <div id="question-table-container"
+                 class="table-wrapper hidden">
               <table class="table">
-
                 <thead>
-
                   <tr>
-
-                    <th width="65">
-                      ลำดับ
-                    </th>
-
-                    <th>
-                      คำถาม
-                    </th>
-
-                    <th width="100">
-                      คะแนน
-                    </th>
-
-                    <th width="120">
-                      เฉลย
-                    </th>
-
-                    <th width="120">
-                      สถานะ
-                    </th>
-
-                    <th width="150">
-                      จัดการ
-                    </th>
-
+                    <th width="65">ลำดับ</th>
+                    <th>คำถาม</th>
+                    <th width="80">คะแนน</th>
+                    <th width="90">เฉลย</th>
+                    <th width="100">สถานะ</th>
+                    <th width="130">จัดการ</th>
                   </tr>
-
                 </thead>
-
-                <tbody id="question-table-body">
-
-                  <!-- Questions rendered by admin.js -->
-
-                </tbody>
-
+                <tbody id="question-table-body"></tbody>
               </table>
-
             </div>
 
-
-            <div
-              id="question-list-empty"
-              class="empty-state hidden"
-            >
-
-              <div class="empty-state-icon">
-                -
-              </div>
-
-              <div class="empty-state-title">
-                ไม่พบข้อสอบ
-              </div>
-
+            <div id="question-list-empty"
+                 class="empty-state hidden">
+              <div class="empty-state-title">ไม่พบข้อสอบ</div>
               <p class="empty-state-description">
                 เลือกรายวิชาและชุดข้อสอบเพื่อแสดงรายการ
               </p>
-
             </div>
-
           </div>
-
         </section>
 
-
-        <!-- ============================================
-             SECTION 3: EXAM RESULTS
-             ============================================ -->
-
-        <section
-          id="results-section"
-          class="admin-section hidden"
-        >
+        <!-- ==========================================
+             PAGE 3: RESULTS
+             ========================================== -->
+        <section id="results-section"
+                 class="admin-section hidden">
 
           <div class="page-header">
-
             <div>
-
-              <h1 class="page-title">
-                ผลการสอบ
-              </h1>
-
+              <h1 class="page-title">ผลการสอบ</h1>
               <p class="page-description">
                 ตรวจสอบคะแนนและสถานะการสอบของผู้เข้าสอบ
               </p>
-
             </div>
 
-            <button
-              type="button"
-              id="btn-refresh-results"
-              class="btn btn-secondary"
-            >
-              รีเฟรชผลสอบ
+            <button type="button" id="btn-refresh-results"
+                    class="btn btn-secondary">
+              รีเฟรช
             </button>
-
           </div>
-
 
           <div class="card mb-4">
-
             <div class="form-row">
-
               <div class="form-group">
-
-                <label
-                  for="result-filter-subject"
-                  class="form-label"
-                >
-                  รายวิชา
-                </label>
-
-                <select
-                  id="result-filter-subject"
-                  class="form-control"
-                >
-
-                  <option value="">
-                    ทุกวิชา
-                  </option>
-
+                <label for="result-filter-subject"
+                       class="form-label">รายวิชา</label>
+                <select id="result-filter-subject"
+                        class="form-control">
+                  <option value="">ทุกวิชา</option>
                 </select>
-
               </div>
 
-
               <div class="form-group">
-
-                <label
-                  for="result-filter-cohort"
-                  class="form-label"
-                >
-                  รุ่นการทดสอบ
-                </label>
-
-                <select
-                  id="result-filter-cohort"
-                  class="form-control"
-                >
-
-                  <option value="">
-                    ทุกรุ่น
-                  </option>
-
+                <label for="result-filter-cohort"
+                       class="form-label">รุ่นการทดสอบ</label>
+                <select id="result-filter-cohort"
+                        class="form-control">
+                  <option value="">ทุกรุ่น</option>
                 </select>
-
               </div>
-
 
               <div class="form-group">
-
-                <label
-                  for="result-search"
-                  class="form-label"
-                >
-                  ค้นหาผู้เข้าสอบ
-                </label>
-
-                <input
-                  type="search"
-                  id="result-search"
-                  class="form-control"
-                  placeholder="ชื่อหรือรหัสพนักงาน"
-                >
-
+                <label for="result-search"
+                       class="form-label">ค้นหาผู้เข้าสอบ</label>
+                <input type="search" id="result-search"
+                       class="form-control"
+                       placeholder="ชื่อหรือรหัสพนักงาน">
               </div>
-
             </div>
 
-            <button
-              type="button"
-              id="btn-search-results"
-              class="btn btn-primary"
-            >
+            <button type="button" id="btn-search-results"
+                    class="btn btn-primary">
               ค้นหาผลสอบ
             </button>
-
           </div>
 
-
           <div class="card">
-
             <div class="card-header">
-
-              <div class="card-title">
-                รายการผลสอบ
-              </div>
-
-              <span
-                id="result-count"
-                class="badge badge-info"
-              >
-                0 รายการ
-              </span>
-
+              <div class="card-title">รายการผลสอบ</div>
+              <span id="result-count"
+                    class="badge badge-info">0 รายการ</span>
             </div>
 
-
-            <div
-              id="result-list-loading"
-              class="text-center text-muted"
-            >
+            <div id="result-list-loading"
+                 class="text-center text-muted">
               กำลังโหลดผลสอบ...
             </div>
 
-
-            <div
-              id="result-table-container"
-              class="table-wrapper hidden"
-            >
-
+            <div id="result-table-container"
+                 class="table-wrapper hidden">
               <table class="table">
-
                 <thead>
-
                   <tr>
-
-                    <th>
-                      ผู้เข้าสอบ
-                    </th>
-
-                    <th>
-                      รายวิชา
-                    </th>
-
-                    <th>
-                      รุ่น
-                    </th>
-
-                    <th>
-                      คะแนน
-                    </th>
-
-                    <th>
-                      สถานะ
-                    </th>
-
-                    <th>
-                      วันที่สอบ
-                    </th>
-
-                    <th>
-                      จัดการ
-                    </th>
-
+                    <th>ผู้เข้าสอบ</th>
+                    <th>รายวิชา</th>
+                    <th>รุ่น</th>
+                    <th>คะแนน</th>
+                    <th>สถานะ</th>
+                    <th>วันที่สอบ</th>
+                    <th>จัดการ</th>
                   </tr>
-
                 </thead>
-
-                <tbody id="result-table-body">
-
-                  <!-- Results rendered by admin.js -->
-
-                </tbody>
-
+                <tbody id="result-table-body"></tbody>
               </table>
-
             </div>
 
-
-            <div
-              id="result-list-empty"
-              class="empty-state hidden"
-            >
-
+            <div id="result-list-empty"
+                 class="empty-state hidden">
               <div class="empty-state-title">
                 ยังไม่มีข้อมูลผลสอบ
               </div>
-
             </div>
-
           </div>
-
         </section>
 
+        <!-- ==========================================
+             PAGE 4: SUMMARY
+             ========================================== -->
+        <section id="summary-section"
+                 class="admin-section hidden">
+
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">สรุปผลการสอบ</h1>
+              <p class="page-description">
+                สรุปผลคะแนนแยกตามบุคคลและรายวิชา
+              </p>
+            </div>
+
+            <button type="button" id="btn-refresh-summary"
+                    class="btn btn-secondary">
+              รีเฟรช
+            </button>
+          </div>
+
+          <div class="card mb-4">
+            <div class="summary-toolbar">
+              <div class="form-group">
+                <label for="summary-filter-cohort"
+                       class="form-label">
+                  รุ่นการทดสอบ
+                </label>
+                <select id="summary-filter-cohort"
+                        class="form-control">
+                  <option value="">เลือกรุ่นการทดสอบ</option>
+                </select>
+              </div>
+
+              <button type="button" id="btn-load-summary"
+                      class="btn btn-primary">
+                แสดงสรุปผล
+              </button>
+            </div>
+          </div>
+
+          <div class="summary-stat-grid">
+            <div class="summary-stat">
+              <div class="summary-stat-label">ผู้เข้าสอบ</div>
+              <div id="summary-total-examinees"
+                   class="summary-stat-value">-</div>
+            </div>
+
+            <div class="summary-stat">
+              <div class="summary-stat-label">สอบผ่าน</div>
+              <div id="summary-total-passed"
+                   class="summary-stat-value">-</div>
+            </div>
+
+            <div class="summary-stat">
+              <div class="summary-stat-label">สอบไม่ผ่าน</div>
+              <div id="summary-total-failed"
+                   class="summary-stat-value">-</div>
+            </div>
+
+            <div class="summary-stat">
+              <div class="summary-stat-label">คะแนนเฉลี่ย</div>
+              <div id="summary-average-score"
+                   class="summary-stat-value">-</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="summary-tabs">
+              <button type="button"
+                      class="summary-tab active"
+                      data-summary-view="individual">
+                รายบุคคล
+              </button>
+
+              <button type="button"
+                      class="summary-tab"
+                      data-summary-view="subject">
+                รายวิชา
+              </button>
+            </div>
+
+            <div id="summary-loading"
+                 class="text-center text-muted hidden">
+              กำลังประมวลผลสรุปผล...
+            </div>
+
+            <div id="summary-individual-panel"
+                 class="summary-section-content">
+              <div class="summary-table-wrap">
+                <table class="table">
+                  <thead>
+                    <tr id="summary-individual-head">
+                      <th>รหัสพนักงาน</th>
+                      <th>ชื่อผู้เข้าสอบ</th>
+                      <th>คะแนนรวม</th>
+                      <th>สถานะ</th>
+                    </tr>
+                  </thead>
+                  <tbody id="summary-individual-body"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div id="summary-subject-panel"
+                 class="summary-section-content hidden">
+              <div class="summary-table-wrap">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>รายวิชา</th>
+                      <th>จำนวนผู้สอบ</th>
+                      <th>คะแนนเฉลี่ย</th>
+                      <th>ผ่าน</th>
+                      <th>ไม่ผ่าน</th>
+                    </tr>
+                  </thead>
+                  <tbody id="summary-subject-body"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div id="summary-empty"
+                 class="empty-state hidden">
+              <div class="empty-state-title">
+                ยังไม่มีข้อมูลสรุปผล
+              </div>
+              <p class="empty-state-description">
+                กรุณาเลือกรุ่นและกดแสดงสรุปผล
+              </p>
+            </div>
+          </div>
+        </section>
 
       </div>
-
     </main>
-
   </div>
 
-
-  <!-- ==================================================
+  <!-- ================================================
        QUESTION MODAL
-       ================================================== -->
-
-  <div
-    id="question-modal"
-    class="modal-overlay hidden"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="question-modal-title"
-  >
+       ================================================ -->
+  <div id="question-modal"
+       class="modal-overlay hidden"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="question-modal-title">
 
     <div class="modal modal-lg">
-
       <div class="modal-header">
-
-        <h3
-          id="question-modal-title"
-          class="modal-title"
-        >
+        <h3 id="question-modal-title" class="modal-title">
           เพิ่มข้อสอบ
         </h3>
 
-        <button
-          type="button"
-          id="btn-close-question-modal"
-          class="btn btn-secondary btn-sm"
-          aria-label="ปิด"
-        >
+        <button type="button"
+                id="btn-close-question-modal"
+                class="btn btn-secondary btn-sm"
+                aria-label="ปิด">
           ปิด
         </button>
-
       </div>
 
-
       <form id="question-form">
-
         <div class="modal-body">
-
-          <input
-            type="hidden"
-            id="question-id"
-            name="questionId"
-          >
-
-
-          <!-- Subject -->
+          <input type="hidden" id="question-id"
+                 name="questionId">
 
           <div class="form-group">
-
-            <label
-              for="question-subject"
-              class="form-label"
-            >
-              รายวิชา
-              <span class="required">*</span>
+            <label for="question-subject" class="form-label">
+              รายวิชา <span class="required">*</span>
             </label>
-
-            <select
-              id="question-subject"
-              name="subjectId"
-              class="form-control"
-              required
-            >
-
-              <option value="">
-                เลือกรายวิชา
-              </option>
-
+            <select id="question-subject" name="subjectId"
+                    class="form-control" required>
+              <option value="">เลือกรายวิชา</option>
             </select>
-
           </div>
-
-
-          <!-- Exam Set -->
 
           <div class="form-group">
-
-            <label
-              for="question-examset"
-              class="form-label"
-            >
-              ชุดข้อสอบ
-              <span class="required">*</span>
+            <label for="question-examset" class="form-label">
+              ชุดข้อสอบ <span class="required">*</span>
             </label>
-
-            <select
-              id="question-examset"
-              name="examSetId"
-              class="form-control"
-              required
-              disabled
-            >
-
-              <option value="">
-                เลือกรายวิชาก่อน
-              </option>
-
+            <select id="question-examset" name="examSetId"
+                    class="form-control" required disabled>
+              <option value="">เลือกรายวิชาก่อน</option>
             </select>
-
           </div>
-
-
-          <!-- Question Number -->
 
           <div class="form-row">
-
             <div class="form-group">
-
-              <label
-                for="question-number"
-                class="form-label"
-              >
-                ลำดับข้อ
-                <span class="required">*</span>
+              <label for="question-number" class="form-label">
+                ลำดับข้อ <span class="required">*</span>
               </label>
-
-              <input
-                type="number"
-                id="question-number"
-                name="questionNo"
-                class="form-control"
-                min="1"
-                step="1"
-                required
-              >
-
+              <input type="number" id="question-number"
+                     name="questionNo" class="form-control"
+                     min="1" step="1" required>
             </div>
 
-
             <div class="form-group">
-
-              <label
-                for="question-score"
-                class="form-label"
-              >
-                คะแนน
-                <span class="required">*</span>
+              <label for="question-score" class="form-label">
+                คะแนน <span class="required">*</span>
               </label>
-
-              <input
-                type="number"
-                id="question-score"
-                name="score"
-                class="form-control"
-                min="0"
-                step="0.5"
-                value="1"
-                required
-              >
-
+              <input type="number" id="question-score"
+                     name="score" class="form-control"
+                     min="0" step="0.5" value="1" required>
             </div>
-
           </div>
 
-
-          <!-- Question Text -->
-
           <div class="form-group">
-
-            <label
-              for="question-text"
-              class="form-label"
-            >
-              คำถาม
-              <span class="required">*</span>
+            <label for="question-text" class="form-label">
+              คำถาม <span class="required">*</span>
             </label>
-
-            <textarea
-              id="question-text"
-              name="questionText"
-              class="form-control"
-              rows="4"
-              required
-              placeholder="พิมพ์ข้อความคำถาม..."
-            ></textarea>
-
+            <textarea id="question-text" name="questionText"
+                      class="form-control" rows="4" required
+                      placeholder="พิมพ์ข้อความคำถาม..."></textarea>
           </div>
 
-
-          <!-- Question Image URL -->
-
           <div class="form-group">
-
-            <label
-              for="question-image-url"
-              class="form-label"
-            >
+            <label for="question-image-url" class="form-label">
               URL รูปภาพประกอบ
             </label>
-
-            <input
-              type="url"
-              id="question-image-url"
-              name="questionImageUrl"
-              class="form-control"
-              placeholder="https://..."
-            >
-
+            <input type="url" id="question-image-url"
+                   name="questionImageUrl" class="form-control"
+                   placeholder="https://...">
             <div class="form-hint">
               เว้นว่างได้หากไม่มีรูปภาพประกอบ
             </div>
-
           </div>
-
-
-          <!-- Choices -->
 
           <div class="section">
-
-            <h3 class="section-title">
-              ตัวเลือกคำตอบ
-            </h3>
-
+            <h3 class="section-title">ตัวเลือกคำตอบ</h3>
 
             <div class="form-group">
-
-              <label
-                for="choice-a"
-                class="form-label"
-              >
-                ตัวเลือก A
-                <span class="required">*</span>
+              <label for="choice-a" class="form-label">
+                ตัวเลือก A <span class="required">*</span>
               </label>
-
-              <textarea
-                id="choice-a"
-                name="choiceA"
-                class="form-control"
-                rows="2"
-                required
-              ></textarea>
-
+              <textarea id="choice-a" name="choiceA"
+                        class="form-control" rows="2" required></textarea>
             </div>
-
 
             <div class="form-group">
-
-              <label
-                for="choice-b"
-                class="form-label"
-              >
-                ตัวเลือก B
-                <span class="required">*</span>
+              <label for="choice-b" class="form-label">
+                ตัวเลือก B <span class="required">*</span>
               </label>
-
-              <textarea
-                id="choice-b"
-                name="choiceB"
-                class="form-control"
-                rows="2"
-                required
-              ></textarea>
-
+              <textarea id="choice-b" name="choiceB"
+                        class="form-control" rows="2" required></textarea>
             </div>
-
 
             <div class="form-group">
-
-              <label
-                for="choice-c"
-                class="form-label"
-              >
-                ตัวเลือก C
-                <span class="required">*</span>
+              <label for="choice-c" class="form-label">
+                ตัวเลือก C <span class="required">*</span>
               </label>
-
-              <textarea
-                id="choice-c"
-                name="choiceC"
-                class="form-control"
-                rows="2"
-                required
-              ></textarea>
-
+              <textarea id="choice-c" name="choiceC"
+                        class="form-control" rows="2" required></textarea>
             </div>
-
 
             <div class="form-group">
-
-              <label
-                for="choice-d"
-                class="form-label"
-              >
-                ตัวเลือก D
-                <span class="required">*</span>
+              <label for="choice-d" class="form-label">
+                ตัวเลือก D <span class="required">*</span>
               </label>
-
-              <textarea
-                id="choice-d"
-                name="choiceD"
-                class="form-control"
-                rows="2"
-                required
-              ></textarea>
-
+              <textarea id="choice-d" name="choiceD"
+                        class="form-control" rows="2" required></textarea>
             </div>
-
           </div>
 
-
-          <!-- Correct Answer -->
-
           <div class="form-group">
-
-            <label
-              for="correct-answer"
-              class="form-label"
-            >
-              เฉลยคำตอบ
-              <span class="required">*</span>
+            <label for="correct-answer" class="form-label">
+              เฉลยคำตอบ <span class="required">*</span>
             </label>
-
-            <select
-              id="correct-answer"
-              name="correctAnswer"
-              class="form-control"
-              required
-            >
-
-              <option value="">
-                เลือกคำตอบที่ถูกต้อง
-              </option>
-
-              <option value="A">
-                A
-              </option>
-
-              <option value="B">
-                B
-              </option>
-
-              <option value="C">
-                C
-              </option>
-
-              <option value="D">
-                D
-              </option>
-
+            <select id="correct-answer" name="correctAnswer"
+                    class="form-control" required>
+              <option value="">เลือกคำตอบที่ถูกต้อง</option>
+              <option value="A">A</option>
+              <option value="B">B</option>
+              <option value="C">C</option>
+              <option value="D">D</option>
             </select>
-
             <div class="form-hint">
               เฉลยจะถูกจัดเก็บใน Backend
               และไม่ส่งไปยังหน้าผู้เข้าสอบ
             </div>
-
           </div>
 
-
-          <!-- Explanation -->
-
           <div class="form-group">
-
-            <label
-              for="question-explanation"
-              class="form-label"
-            >
+            <label for="question-explanation" class="form-label">
               คำอธิบายเพิ่มเติม
             </label>
-
-            <textarea
-              id="question-explanation"
-              name="explanation"
-              class="form-control"
-              rows="3"
-              placeholder="คำอธิบายสำหรับเจ้าหน้าที่..."
-            ></textarea>
-
+            <textarea id="question-explanation" name="explanation"
+                      class="form-control" rows="3"
+                      placeholder="คำอธิบายสำหรับเจ้าหน้าที่..."></textarea>
           </div>
-
-
-          <!-- Status -->
 
           <div class="form-group">
-
-            <label
-              for="question-status"
-              class="form-label"
-            >
+            <label for="question-status" class="form-label">
               สถานะข้อสอบ
             </label>
-
-            <select
-              id="question-status"
-              name="status"
-              class="form-control"
-            >
-
-              <option value="ACTIVE">
-                ใช้งาน
-              </option>
-
-              <option value="INACTIVE">
-                ปิดใช้งาน
-              </option>
-
+            <select id="question-status" name="status"
+                    class="form-control">
+              <option value="ACTIVE">ใช้งาน</option>
+              <option value="INACTIVE">ปิดใช้งาน</option>
             </select>
-
           </div>
 
-
-          <div
-            id="question-form-error"
-            class="alert alert-danger hidden"
-            role="alert"
-          ></div>
-
+          <div id="question-form-error"
+               class="alert alert-danger hidden"
+               role="alert"></div>
         </div>
 
-
         <div class="modal-footer">
-
-          <button
-            type="button"
-            id="btn-cancel-question"
-            class="btn btn-secondary"
-          >
+          <button type="button" id="btn-cancel-question"
+                  class="btn btn-secondary">
             ยกเลิก
           </button>
 
-          <button
-            type="submit"
-            id="btn-save-question"
-            class="btn btn-primary"
-          >
+          <button type="submit" id="btn-save-question"
+                  class="btn btn-primary">
             บันทึกข้อสอบ
           </button>
-
         </div>
-
       </form>
-
     </div>
-
   </div>
 
-
-  <!-- ==================================================
+  <!-- ================================================
        SCORE ADJUSTMENT MODAL
-       ================================================== -->
-
-  <div
-    id="score-modal"
-    class="modal-overlay hidden"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="score-modal-title"
-  >
+       ================================================ -->
+  <div id="score-modal"
+       class="modal-overlay hidden"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="score-modal-title">
 
     <div class="modal">
-
       <div class="modal-header">
-
-        <h3
-          id="score-modal-title"
-          class="modal-title"
-        >
+        <h3 id="score-modal-title" class="modal-title">
           ปรับคะแนนสอบ
         </h3>
 
-        <button
-          type="button"
-          id="btn-close-score-modal"
-          class="btn btn-secondary btn-sm"
-        >
+        <button type="button" id="btn-close-score-modal"
+                class="btn btn-secondary btn-sm">
           ปิด
         </button>
-
       </div>
 
-
       <form id="score-form">
-
         <div class="modal-body">
-
-          <input
-            type="hidden"
-            id="adjust-attempt-id"
-          >
-
+          <input type="hidden" id="adjust-attempt-id">
 
           <div class="form-group">
-
-            <label class="form-label">
-              ผู้เข้าสอบ
-            </label>
-
-            <strong id="adjust-examinee-name">
-              -
-            </strong>
-
+            <label class="form-label">ผู้เข้าสอบ</label>
+            <strong id="adjust-examinee-name">-</strong>
           </div>
 
-
           <div class="form-group">
-
-            <label class="form-label">
-              รายวิชา
-            </label>
-
-            <strong id="adjust-subject-name">
-              -
-            </strong>
-
+            <label class="form-label">รายวิชา</label>
+            <strong id="adjust-subject-name">-</strong>
           </div>
 
-
           <div class="form-group">
-
-            <label
-              for="adjust-score"
-              class="form-label"
-            >
-              คะแนนใหม่
-              <span class="required">*</span>
+            <label for="adjust-score" class="form-label">
+              คะแนนใหม่ <span class="required">*</span>
             </label>
-
-            <input
-              type="number"
-              id="adjust-score"
-              class="form-control"
-              min="0"
-              step="0.5"
-              required
-            >
-
+            <input type="number" id="adjust-score"
+                   class="form-control" min="0"
+                   step="0.5" required>
             <div class="form-hint">
               คะแนนต้องไม่เกินคะแนนเต็ม
             </div>
-
           </div>
-
 
           <div class="form-group">
-
-            <label
-              for="adjust-reason"
-              class="form-label"
-            >
-              เหตุผลในการปรับคะแนน
-              <span class="required">*</span>
+            <label for="adjust-reason" class="form-label">
+              เหตุผลในการปรับคะแนน <span class="required">*</span>
             </label>
-
-            <textarea
-              id="adjust-reason"
-              class="form-control"
-              rows="3"
-              required
-              placeholder="ระบุเหตุผลในการปรับคะแนน..."
-            ></textarea>
-
+            <textarea id="adjust-reason" class="form-control"
+                      rows="3" required
+                      placeholder="ระบุเหตุผลในการปรับคะแนน..."></textarea>
           </div>
 
-
-          <div
-            id="score-form-error"
-            class="alert alert-danger hidden"
-          ></div>
-
+          <div id="score-form-error"
+               class="alert alert-danger hidden"></div>
         </div>
 
-
         <div class="modal-footer">
-
-          <button
-            type="button"
-            id="btn-cancel-score"
-            class="btn btn-secondary"
-          >
+          <button type="button" id="btn-cancel-score"
+                  class="btn btn-secondary">
             ยกเลิก
           </button>
 
-          <button
-            type="submit"
-            id="btn-save-score"
-            class="btn btn-primary"
-          >
+          <button type="submit" id="btn-save-score"
+                  class="btn btn-primary">
             บันทึกคะแนน
           </button>
-
         </div>
-
       </form>
-
     </div>
-
   </div>
 
-
-  <!-- ==================================================
+  <!-- ================================================
        CONFIRMATION MODAL
-       ================================================== -->
-
-  <div
-    id="admin-confirm-modal"
-    class="modal-overlay hidden"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="admin-confirm-title"
-  >
+       ================================================ -->
+  <div id="admin-confirm-modal"
+       class="modal-overlay hidden"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="admin-confirm-title">
 
     <div class="modal">
-
       <div class="modal-header">
-
-        <h3
-          id="admin-confirm-title"
-          class="modal-title"
-        >
+        <h3 id="admin-confirm-title" class="modal-title">
           ยืนยันการดำเนินการ
         </h3>
-
       </div>
 
-
-      <div
-        id="admin-confirm-message"
-        class="modal-body"
-      >
+      <div id="admin-confirm-message" class="modal-body">
         กรุณายืนยันการดำเนินการ
       </div>
 
-
       <div class="modal-footer">
-
-        <button
-          type="button"
-          id="btn-admin-confirm-cancel"
-          class="btn btn-secondary"
-        >
+        <button type="button"
+                id="btn-admin-confirm-cancel"
+                class="btn btn-secondary">
           ยกเลิก
         </button>
 
-        <button
-          type="button"
-          id="btn-admin-confirm-ok"
-          class="btn btn-danger"
-        >
+        <button type="button"
+                id="btn-admin-confirm-ok"
+                class="btn btn-danger">
           ยืนยัน
         </button>
-
       </div>
-
     </div>
-
   </div>
 
-
-  <!-- ==================================================
-       SCRIPTS
-       ================================================== -->
-
+  <!-- SCRIPTS -->
   <script src="js/api.js"></script>
   <script src="js/admin.js"></script>
 
 </body>
-
 </html>
