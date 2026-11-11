@@ -485,7 +485,6 @@ async function loadAdminDashboard() {
 }
 
 
-
 function renderAdminDashboardSubjects() {
     const container = adminElement("dashboard-subject-list");
     if (!container) return;
@@ -506,16 +505,21 @@ function renderAdminDashboardSubjects() {
             item => String(item.subjectId) === subjectId
         );
 
-        // ถือว่าเปิดสอบเมื่อมีชุดข้อสอบ และทุกชุดเปิดอยู่
         const isOpen = subjectExamSets.length > 0 &&
             subjectExamSets.every(item =>
                 adminNormalizeBoolean(item.isOpen)
             );
 
+        const inactive = Boolean(
+            subject.status &&
+            String(subject.status).toUpperCase() !== "ACTIVE"
+        );
+
+        // Card
         const card = document.createElement("article");
         card.className = "subject-card";
 
-        // ส่วนหัวการ์ด
+        // Top row
         const top = document.createElement("div");
         top.className = "subject-card-top";
 
@@ -528,8 +532,7 @@ function renderAdminDashboardSubjects() {
             subject.subjectName ||
             subject.name ||
             subject.subjectCode ||
-            subjectId ||
-            "ไม่ระบุชื่อวิชา";
+            subjectId;
 
         const meta = document.createElement("div");
         meta.className = "subject-card-meta";
@@ -538,42 +541,47 @@ function renderAdminDashboardSubjects() {
         info.append(name, meta);
 
         const status = document.createElement("span");
-        status.className = isOpen
-            ? "badge badge-success"
-            : "badge badge-secondary";
+        status.className = `subject-status ${
+            isOpen ? "is-open" : "is-closed"
+        }`;
         status.textContent = isOpen ? "เปิดสอบ" : "ปิดสอบ";
 
         top.append(info, status);
 
-        // ส่วนควบคุม
+        // Bottom row
         const actions = document.createElement("div");
         actions.className = "subject-card-actions";
 
-        const toggleLabel = document.createElement("label");
-        toggleLabel.className = "exam-toggle";
+        // Capsule switch
+        const switchLabel = document.createElement("label");
+        switchLabel.className = "subject-switch";
 
-        const toggleInput = document.createElement("input");
-        toggleInput.type = "checkbox";
-        toggleInput.checked = isOpen;
+        const switchInput = document.createElement("input");
+        switchInput.type = "checkbox";
+        switchInput.checked = isOpen;
+        switchInput.disabled = inactive;
+        switchInput.setAttribute(
+            "aria-label",
+            `เปลี่ยนสถานะการสอบ ${name.textContent}`
+        );
 
-        const inactive =
-            subject.status &&
-            String(subject.status).toUpperCase() !== "ACTIVE";
+        const switchSlider = document.createElement("span");
+        switchSlider.className = "subject-switch-slider";
 
-        toggleInput.disabled = Boolean(inactive);
+        const switchText = document.createElement("span");
+        switchText.className = "subject-switch-text";
+        switchText.textContent = isOpen ? "เปิดสอบ" : "ปิดสอบ";
 
-        const track = document.createElement("span");
-        track.className = "exam-toggle-track";
+        switchLabel.append(
+            switchInput,
+            switchSlider,
+            switchText
+        );
 
-        toggleLabel.append(toggleInput, track);
+        switchInput.addEventListener("change", async () => {
+            const nextValue = switchInput.checked;
 
-        const toggleText = document.createElement("span");
-        toggleText.className = "exam-toggle-label";
-        toggleText.textContent = isOpen ? "เปิดสอบ" : "ปิดสอบ";
-
-        toggleInput.addEventListener("change", async () => {
-            const nextValue = toggleInput.checked;
-            toggleInput.disabled = true;
+            switchInput.disabled = true;
 
             try {
                 await setAdminSubjectExamStatus(
@@ -582,8 +590,8 @@ function renderAdminDashboardSubjects() {
                 );
 
                 adminShowAlert(
-                    `${nextValue ? "เปิด" : "ปิด"}สอบวิชา ${
-                        subject.subjectName || subject.subjectCode || subjectId
+                    `${nextValue ? "เปิด" : "ปิด"}สอบ ${
+                        name.textContent
                     } เรียบร้อยแล้ว`,
                     "success"
                 );
@@ -591,7 +599,7 @@ function renderAdminDashboardSubjects() {
                 await loadAdminDashboard();
 
             } catch (error) {
-                toggleInput.checked = !nextValue;
+                switchInput.checked = !nextValue;
 
                 adminShowAlert(
                     `เปลี่ยนสถานะไม่สำเร็จ: ${error.message}`,
@@ -599,42 +607,38 @@ function renderAdminDashboardSubjects() {
                 );
 
             } finally {
-                toggleInput.disabled = false;
+                switchInput.disabled = inactive;
             }
         });
 
-        const manageButton = adminCreateButton(
-            "จัดการข้อสอบ",
-            "subject-manage-btn",
-            () => {
-                adminSwitchSection("questions");
+        // Manage questions
+        const manageButton = document.createElement("button");
+        manageButton.type = "button";
+        manageButton.className = "subject-manage-btn";
+        manageButton.textContent = "จัดการข้อสอบ";
 
-                const filterSubject = adminElement("filter-subject");
-                if (filterSubject) {
-                    filterSubject.value = subjectId;
-                }
+        manageButton.addEventListener("click", () => {
+            adminSwitchSection("questions");
 
-                const questionSubject = adminElement("question-subject");
-                if (questionSubject) {
-                    questionSubject.value = subjectId;
-                    updateQuestionExamSetOptions();
-                }
-
-                loadAdminQuestions();
+            const filterSubject = adminElement("filter-subject");
+            if (filterSubject) {
+                filterSubject.value = subjectId;
             }
-        );
 
-        actions.append(
-            toggleLabel,
-            toggleText,
-            manageButton
-        );
+            const questionSubject = adminElement("question-subject");
+            if (questionSubject) {
+                questionSubject.value = subjectId;
+                updateQuestionExamSetOptions();
+            }
 
+            loadAdminQuestions();
+        });
+
+        actions.append(switchLabel, manageButton);
         card.append(top, actions);
         container.appendChild(card);
     });
 }
-
 
 
 async function setAdminSubjectExamStatus(subjectId, isOpen) {
