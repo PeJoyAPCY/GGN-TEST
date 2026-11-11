@@ -6,15 +6,16 @@
  * ======================================================
  *
  * File: js/admin.js
- * Version: 1.0.0
+ * Version: 1.1.0
+ * Updated: 2026-11-11
  *
- * Responsibilities:
- * - Admin dashboard
- * - Subject and ExamSet management data
- * - Question CRUD
- * - Question search and filters
- * - Exam results
- * - Score adjustment
+ * Changes:
+ * - Remove duplicate Dashboard initialization
+ * - Prevent duplicate initialization
+ * - Prevent overlapping section loading
+ * - Bind filter events only once
+ * - Improve loading and error handling
+ * - Keep existing Admin features and API actions
  *
  * Dependencies:
  * - css/style.css
@@ -42,7 +43,17 @@ const GGNAdmin = {
     currentQuestion: null,
     currentResult: null,
 
-    isLoading: false
+    isLoading: false,
+    initialized: false,
+    navigationBound: false,
+    eventsBound: false,
+    filtersBound: false,
+
+    sectionRequests: {
+        dashboard: null,
+        questions: null,
+        results: null
+    }
 };
 
 
@@ -273,12 +284,16 @@ function adminSwitchSection(sectionName) {
 }
 
 function setupAdminNavigation() {
+    if (GGNAdmin.navigationBound) return;
+
     document.querySelectorAll("[data-section]")
         .forEach(button => {
             button.addEventListener("click", () => {
                 adminSwitchSection(button.dataset.section);
             });
         });
+
+    GGNAdmin.navigationBound = true;
 }
 
 
@@ -287,101 +302,118 @@ function setupAdminNavigation() {
 ====================================================== */
 
 async function loadAdminDashboard() {
-    adminSetLoading("dashboard-subjects-loading", true);
-
-    try {
-        const dashboardResponse = await adminRequest(
-            "admin.dashboard"
-        );
-
-        const dashboard = dashboardResponse || {};
-
-        GGNAdmin.admin =
-            dashboard.admin ||
-            dashboard.user ||
-            GGNAdmin.admin;
-
-        if (GGNAdmin.admin) {
-            adminText(
-                "admin-name",
-                GGNAdmin.admin.fullname ||
-                GGNAdmin.admin.name ||
-                GGNAdmin.admin.email ||
-                "Admin"
-            );
-
-            adminText(
-                "admin-role",
-                GGNAdmin.admin.role || "ADMIN"
-            );
-        }
-
-        const [subjectResponse, examSetResponse] =
-            await Promise.all([
-                adminRequest("admin.subjects"),
-                adminRequest("admin.examSets")
-            ]);
-
-        GGNAdmin.subjects = adminGetArray(
-            subjectResponse,
-            ["subjects", "items"]
-        );
-
-        GGNAdmin.examSets = adminGetArray(
-            examSetResponse,
-            ["examSets", "items"]
-        );
-
-        const dashboardData = dashboard || {};
-
-        const totalQuestions =
-            dashboardData.totalQuestions ??
-            dashboardData.questionCount ??
-            "-";
-
-        adminText(
-            "stat-total-subjects",
-            adminFormatNumber(GGNAdmin.subjects.length)
-        );
-
-        adminText(
-            "stat-total-examsets",
-            adminFormatNumber(GGNAdmin.examSets.length)
-        );
-
-        adminText(
-            "stat-total-questions",
-            totalQuestions === "-"
-                ? "-"
-                : adminFormatNumber(totalQuestions)
-        );
-
-        adminText("stat-system-status", "พร้อมใช้งาน");
-
-        renderAdminDashboardSubjects();
-        populateQuestionFilters();
-
-        adminText(
-            "admin-connection-status",
-            "เชื่อมต่อระบบแล้ว"
-        );
-
-    } catch (error) {
-        console.error("Dashboard error:", error);
-
-        adminShowAlert(
-            `โหลด Dashboard ไม่สำเร็จ: ${error.message}`,
-            "error"
-        );
-
-        adminText(
-            "admin-connection-status",
-            "เชื่อมต่อไม่สำเร็จ"
-        );
-
-    } finally {
-        adminSetLoading("dashboard-subjects-loading", false);
+    if (GGNAdmin.sectionRequests.dashboard) {
+        return GGNAdmin.sectionRequests.dashboard;
     }
+
+    const request = (async () => {
+        adminSetLoading("dashboard-subjects-loading", true);
+
+        try {
+            const dashboardResponse = await adminRequest(
+                "admin.dashboard"
+            );
+
+            const dashboard = dashboardResponse || {};
+
+            GGNAdmin.admin =
+                dashboard.admin ||
+                dashboard.user ||
+                GGNAdmin.admin;
+
+            if (GGNAdmin.admin) {
+                adminText(
+                    "admin-name",
+                    GGNAdmin.admin.fullname ||
+                    GGNAdmin.admin.name ||
+                    GGNAdmin.admin.email ||
+                    GGNAdmin.admin.displayName ||
+                    "ผู้ดูแลระบบ"
+                );
+
+                adminText(
+                    "admin-role",
+                    GGNAdmin.admin.role || "SUPER_ADMIN"
+                );
+            } else {
+                adminText("admin-name", "ผู้ดูแลระบบ");
+                adminText("admin-role", "SUPER_ADMIN");
+            }
+
+            const [subjectResponse, examSetResponse] =
+                await Promise.all([
+                    adminRequest("admin.subjects"),
+                    adminRequest("admin.examSets")
+                ]);
+
+            GGNAdmin.subjects = adminGetArray(
+                subjectResponse,
+                ["subjects", "items"]
+            );
+
+            GGNAdmin.examSets = adminGetArray(
+                examSetResponse,
+                ["examSets", "items"]
+            );
+
+            const totalQuestions =
+                dashboard.totalQuestions ??
+                dashboard.questionCount ??
+                "-";
+
+            adminText(
+                "stat-total-subjects",
+                adminFormatNumber(GGNAdmin.subjects.length)
+            );
+
+            adminText(
+                "stat-total-examsets",
+                adminFormatNumber(GGNAdmin.examSets.length)
+            );
+
+            adminText(
+                "stat-total-questions",
+                totalQuestions === "-"
+                    ? "-"
+                    : adminFormatNumber(totalQuestions)
+            );
+
+            adminText("stat-system-status", "พร้อมใช้งาน");
+
+            renderAdminDashboardSubjects();
+            populateQuestionFilters();
+
+            adminText(
+                "admin-connection-status",
+                "เชื่อมต่อระบบแล้ว"
+            );
+
+            return true;
+
+        } catch (error) {
+            console.error("Dashboard error:", error);
+
+            adminShowAlert(
+                `โหลด Dashboard ไม่สำเร็จ: ${error.message}`,
+                "error"
+            );
+
+            adminText(
+                "admin-connection-status",
+                "เชื่อมต่อไม่สำเร็จ"
+            );
+
+            return false;
+
+        } finally {
+            adminSetLoading("dashboard-subjects-loading", false);
+            GGNAdmin.sectionRequests.dashboard = null;
+        }
+    })();
+
+    GGNAdmin.sectionRequests.dashboard = request;
+
+    return request;
 }
 
 function renderAdminDashboardSubjects() {
@@ -390,10 +422,6 @@ function renderAdminDashboardSubjects() {
     if (!container) return;
 
     container.replaceChildren();
-
-    const emptyElement = adminElement(
-        "dashboard-subjects-empty"
-    );
 
     if (!GGNAdmin.subjects.length) {
         adminShow("dashboard-subjects-empty", true);
@@ -491,21 +519,21 @@ function populateQuestionFilters() {
         }
     });
 
-    if (questionSubject) {
+    if (questionSubject && !GGNAdmin.filtersBound) {
         questionSubject.addEventListener(
             "change",
             updateQuestionExamSetOptions
         );
     }
 
-    if (subjectSelect) {
+    if (subjectSelect && !GGNAdmin.filtersBound) {
         subjectSelect.addEventListener(
             "change",
             loadAdminQuestions
         );
     }
 
-    if (examSetSelect) {
+    if (examSetSelect && !GGNAdmin.filtersBound) {
         examSetSelect.addEventListener(
             "change",
             loadAdminQuestions
@@ -515,6 +543,8 @@ function populateQuestionFilters() {
     if (questionSubject) {
         updateQuestionExamSetOptions();
     }
+
+    GGNAdmin.filtersBound = true;
 }
 
 function updateQuestionExamSetOptions() {
@@ -568,48 +598,63 @@ function updateQuestionExamSetOptions() {
 ====================================================== */
 
 async function loadAdminQuestions() {
-    adminSetLoading("question-list-loading", true);
-    adminShow("question-table-container", false);
-    adminShow("question-list-empty", false);
-
-    try {
-        const payload = {
-            subjectId:
-                adminElement("filter-subject")?.value || "",
-
-            examSetId:
-                adminElement("filter-examset")?.value || "",
-
-            status:
-                adminElement("filter-question-status")?.value || "",
-
-            search:
-                adminElement("question-search")?.value.trim() || ""
-        };
-
-        const response = await adminRequest(
-            "admin.questions",
-            payload
-        );
-
-        GGNAdmin.questions = adminGetArray(
-            response,
-            ["questions", "items"]
-        );
-
-        renderAdminQuestions();
-
-    } catch (error) {
-        console.error("Question loading error:", error);
-
-        adminShowAlert(
-            `โหลดรายการข้อสอบไม่สำเร็จ: ${error.message}`,
-            "error"
-        );
-
-    } finally {
-        adminSetLoading("question-list-loading", false);
+    if (GGNAdmin.sectionRequests.questions) {
+        return GGNAdmin.sectionRequests.questions;
     }
+
+    const request = (async () => {
+        adminSetLoading("question-list-loading", true);
+        adminShow("question-table-container", false);
+        adminShow("question-list-empty", false);
+
+        try {
+            const payload = {
+                subjectId:
+                    adminElement("filter-subject")?.value || "",
+
+                examSetId:
+                    adminElement("filter-examset")?.value || "",
+
+                status:
+                    adminElement("filter-question-status")?.value || "",
+
+                search:
+                    adminElement("question-search")?.value.trim() || ""
+            };
+
+            const response = await adminRequest(
+                "admin.questions",
+                payload
+            );
+
+            GGNAdmin.questions = adminGetArray(
+                response,
+                ["questions", "items"]
+            );
+
+            renderAdminQuestions();
+
+            return true;
+
+        } catch (error) {
+            console.error("Question loading error:", error);
+
+            adminShowAlert(
+                `โหลดรายการข้อสอบไม่สำเร็จ: ${error.message}`,
+                "error"
+            );
+
+            return false;
+
+        } finally {
+            adminSetLoading("question-list-loading", false);
+            GGNAdmin.sectionRequests.questions = null;
+        }
+    })();
+
+    GGNAdmin.sectionRequests.questions = request;
+
+    return request;
 }
 
 function getQuestionSubjectName(subjectId) {
@@ -1032,47 +1077,62 @@ async function refreshAdminQuestionCount() {
 ====================================================== */
 
 async function loadAdminResults() {
-    adminSetLoading("result-list-loading", true);
-    adminShow("result-table-container", false);
-    adminShow("result-list-empty", false);
-
-    try {
-        const payload = {
-            subjectId:
-                adminElement("result-filter-subject")?.value || "",
-
-            cohortId:
-                adminElement("result-filter-cohort")?.value || "",
-
-            search:
-                adminElement("result-search")?.value.trim() || ""
-        };
-
-        const response = await adminRequest(
-            "admin.results",
-            payload
-        );
-
-        GGNAdmin.results = adminGetArray(
-            response,
-            ["results", "items"]
-        );
-
-        renderAdminResults();
-
-    } catch (error) {
-        console.error("Result loading error:", error);
-
-        adminShow("result-list-empty", true);
-
-        adminShowAlert(
-            "ยังไม่สามารถโหลดผลสอบได้: " + error.message,
-            "warning"
-        );
-
-    } finally {
-        adminSetLoading("result-list-loading", false);
+    if (GGNAdmin.sectionRequests.results) {
+        return GGNAdmin.sectionRequests.results;
     }
+
+    const request = (async () => {
+        adminSetLoading("result-list-loading", true);
+        adminShow("result-table-container", false);
+        adminShow("result-list-empty", false);
+
+        try {
+            const payload = {
+                subjectId:
+                    adminElement("result-filter-subject")?.value || "",
+
+                cohortId:
+                    adminElement("result-filter-cohort")?.value || "",
+
+                search:
+                    adminElement("result-search")?.value.trim() || ""
+            };
+
+            const response = await adminRequest(
+                "admin.results",
+                payload
+            );
+
+            GGNAdmin.results = adminGetArray(
+                response,
+                ["results", "items"]
+            );
+
+            renderAdminResults();
+
+            return true;
+
+        } catch (error) {
+            console.error("Result loading error:", error);
+
+            adminShow("result-list-empty", true);
+
+            adminShowAlert(
+                "ยังไม่สามารถโหลดผลสอบได้: " + error.message,
+                "warning"
+            );
+
+            return false;
+
+        } finally {
+            adminSetLoading("result-list-loading", false);
+            GGNAdmin.sectionRequests.results = null;
+        }
+    })();
+
+    GGNAdmin.sectionRequests.results = request;
+
+    return request;
 }
 
 function renderAdminResults() {
@@ -1267,6 +1327,8 @@ async function saveAdjustedScore(event) {
 ====================================================== */
 
 function setupAdminEvents() {
+    if (GGNAdmin.eventsBound) return;
+
     adminElement("btn-refresh-dashboard")
         ?.addEventListener("click", loadAdminDashboard);
 
@@ -1338,6 +1400,8 @@ function setupAdminEvents() {
         ?.addEventListener("click", () => {
             adminShow("admin-confirm-modal", false);
         });
+
+    GGNAdmin.eventsBound = true;
 }
 
 
@@ -1346,26 +1410,52 @@ function setupAdminEvents() {
 ====================================================== */
 
 async function initializeGGNAdmin() {
-    setupAdminNavigation();
-    setupAdminEvents();
+    if (GGNAdmin.initialized) {
+        return;
+    }
 
-    adminText(
-        "admin-connection-status",
-        "กำลังเชื่อมต่อ..."
-    );
+    GGNAdmin.initialized = true;
 
-    await loadAdminDashboard();
+    try {
+        setupAdminNavigation();
+        setupAdminEvents();
 
-    adminSwitchSection("dashboard");
-}
+        adminText(
+            "admin-connection-status",
+            "กำลังเชื่อมต่อ..."
+        );
 
+        // Set initial section without calling navigation loader.
+        GGNAdmin.currentSection = "dashboard";
 
-/* ======================================================
-   16. START APPLICATION
-====================================================== */
+        [
+            "dashboard",
+            "questions",
+            "results"
+        ].forEach(section => {
+            const sectionElement = adminElement(
+                `${section}-section`
+            );
 
-document.addEventListener("DOMContentLoaded", () => {
-    initializeGGNAdmin().catch(error => {
+            if (sectionElement) {
+                sectionElement.hidden = section !== "dashboard";
+            }
+        });
+
+        document.querySelectorAll(".sidebar-link[data-section]")
+            .forEach(link => {
+                link.classList.toggle(
+                    "active",
+                    link.dataset.section === "dashboard"
+                );
+            });
+
+        // Load Dashboard only once.
+        await loadAdminDashboard();
+
+    } catch (error) {
+        GGNAdmin.initialized = false;
+
         console.error(
             "GGN Admin initialization error:",
             error
@@ -1376,5 +1466,14 @@ document.addEventListener("DOMContentLoaded", () => {
             error.message,
             "error"
         );
-    });
+    }
+}
+
+
+/* ======================================================
+   16. START APPLICATION
+====================================================== */
+
+document.addEventListener("DOMContentLoaded", () => {
+    initializeGGNAdmin();
 });
