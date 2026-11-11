@@ -1410,13 +1410,13 @@ function setupAdminEvents() {
 ====================================================== */
 
 async function initializeGGNAdmin() {
-    if (GGNAdmin.initialized) {
-        return;
-    }
+
+    if (GGNAdmin.initialized) return;
 
     GGNAdmin.initialized = true;
 
     try {
+
         setupAdminNavigation();
         setupAdminEvents();
 
@@ -1425,47 +1425,49 @@ async function initializeGGNAdmin() {
             "กำลังเชื่อมต่อ..."
         );
 
-        // Set initial section without calling navigation loader.
+        // แสดง Dashboard
         GGNAdmin.currentSection = "dashboard";
 
-        [
-            "dashboard",
-            "questions",
-            "results"
-        ].forEach(section => {
-            const sectionElement = adminElement(
-                `${section}-section`
-            );
-
-            if (sectionElement) {
-                sectionElement.hidden = section !== "dashboard";
-            }
+        document.querySelectorAll(".admin-section").forEach(section => {
+            section.classList.add("hidden");
         });
 
-        document.querySelectorAll(".sidebar-link[data-section]")
-            .forEach(link => {
-                link.classList.toggle(
-                    "active",
-                    link.dataset.section === "dashboard"
-                );
-            });
+        adminElement("dashboard-section")?.classList.remove("hidden");
 
-        // Load Dashboard only once.
+        document.querySelectorAll(".sidebar-link").forEach(link => {
+            link.classList.toggle(
+                "active",
+                link.dataset.section === "dashboard"
+            );
+        });
+
+        // โหลดข้อมูล Dashboard
         await loadAdminDashboard();
 
     } catch (error) {
-        GGNAdmin.initialized = false;
 
         console.error(
-            "GGN Admin initialization error:",
+            "[GGN Admin] Initialization error:",
             error
         );
 
-        adminShowAlert(
+        GGNAdmin.initialized = false;
+
+        adminAlert(
             "ไม่สามารถเริ่มต้นระบบ Admin ได้: " +
-            error.message,
-            "error"
+            (error.message || error),
+            "danger"
         );
+
+    } finally {
+
+        // ซ่อน Loading หลักเสมอ
+        const loading = adminElement("admin-loading");
+
+        if (loading) {
+            loading.classList.add("hidden");
+        }
+
     }
 }
 
