@@ -485,6 +485,7 @@ async function loadAdminDashboard() {
 }
 
 
+
 function renderAdminDashboardSubjects() {
     const container = adminElement("dashboard-subject-list");
     if (!container) return;
@@ -639,6 +640,7 @@ function renderAdminDashboardSubjects() {
         container.appendChild(card);
     });
 }
+
 
 
 async function setAdminSubjectExamStatus(subjectId, isOpen) {

@@ -2383,3 +2383,214 @@ textarea.form-control {
         font-size: 10px;
     }
 }
+
+/* =========================================
+   GGN TEST - SUBJECT CARD
+   CAPSULE SWITCH DESIGN
+   ========================================= */
+
+#dashboard-subject-list.subject-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.subject-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 14px;
+    min-width: 0;
+    min-height: 140px;
+    padding: 14px;
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+
+.subject-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.subject-card-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.subject-card-name {
+    color: #171717;
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.subject-card-meta {
+    margin-top: 4px;
+    color: #737373;
+    font-size: 11px;
+}
+
+.subject-status {
+    flex-shrink: 0;
+    padding: 4px 9px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.subject-status.is-open {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.subject-status.is-closed {
+    background: #f5f5f5;
+    color: #525252;
+}
+
+/* Bottom controls */
+.subject-card-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px solid #eeeeee;
+}
+
+/* Capsule switch */
+.subject-switch {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    width: auto;
+    min-width: 0;
+    height: 34px;
+    margin: 0;
+    cursor: pointer;
+}
+
+.subject-switch input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+
+.subject-switch-slider {
+    position: relative;
+    display: block;
+    flex: 0 0 53px;
+    width: 53px;
+    height: 30px;
+    border-radius: 30px;
+    background: #d4d4d4;
+    transition: background .2s ease;
+}
+
+.subject-switch-slider::before {
+    content: "";
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,.2);
+    transition: transform .2s ease;
+}
+
+.subject-switch input:checked + .subject-switch-slider {
+    background: #facc15;
+}
+
+.subject-switch input:checked + .subject-switch-slider::before {
+    transform: translateX(23px);
+    background: #171717;
+}
+
+.subject-switch input:focus-visible + .subject-switch-slider {
+    outline: 3px solid rgba(250,204,21,.35);
+    outline-offset: 3px;
+}
+
+.subject-switch input:disabled + .subject-switch-slider {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+.subject-switch-text {
+    display: inline;
+    color: #404040;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+/* Manage button */
+.subject-manage-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
+    min-height: 34px;
+    padding: 7px 8px;
+    border: 1px solid #171717;
+    border-radius: 9px;
+    background: #171717;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background .2s ease;
+}
+
+.subject-manage-btn:hover {
+    background: #404040;
+}
+
+@media (max-width: 640px) {
+    #dashboard-subject-list.subject-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+}
+
+@media (max-width: 380px) {
+    .subject-card-actions {
+        gap: 7px;
+    }
+
+    .subject-switch {
+        gap: 6px;
+    }
+
+    .subject-switch-slider {
+        flex-basis: 46px;
+        width: 46px;
+    }
+
+    .subject-switch input:checked + .subject-switch-slider::before {
+        transform: translateX(16px);
+    }
+
+    .subject-switch-text {
+        font-size: 10px;
+    }
+
+    .subject-manage-btn {
+        font-size: 10px;
+    }
+}
