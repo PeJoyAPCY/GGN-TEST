@@ -8,7 +8,7 @@
 
   <title>GGN TEST | Admin</title>
 
-  <link rel="stylesheet" href="css/style.css?v=2.2.1">
+  <link rel="stylesheet" href="css/style.css?v=2.3.0">
 </head>
 
 <body>
@@ -118,7 +118,7 @@
             <div>
               <h1 class="page-title">จัดการรายวิชา</h1>
               <p class="page-description">
-                เปิด–ปิดการสอบและจัดการชุดข้อสอบทั้ง 9 วิชา
+                จัดการรายวิชาและสถานะการเปิดสอบ
               </p>
             </div>
 
@@ -133,7 +133,7 @@
 
             <div class="stat-card">
               <div class="stat-label">รายวิชาทั้งหมด</div>
-              <div id="stat-total-subjects" class="stat-value">9</div>
+              <div id="stat-total-subjects" class="stat-value">0</div>
               <div class="stat-description">วิชาในระบบ</div>
             </div>
 
@@ -161,7 +161,7 @@
           <div class="card mb-4">
             <div class="card-header">
               <div class="card-title">รายวิชาในระบบ</div>
-              <span class="badge badge-primary">9 วิชา</span>
+              <span id="dashboard-subject-count" class="badge badge-primary">0 วิชา</span>
             </div>
 
             <div id="dashboard-subjects-loading"
@@ -182,22 +182,25 @@
             </div>
           </div>
 
-          <div class="card">
+          <div class="card subject-management-card">
             <div class="card-header">
-              <div class="card-title">การจัดการ</div>
+              <div>
+                <div class="card-title">การจัดการวิชา</div>
+                <p class="text-muted">เพิ่มรายวิชาใหม่ หรือปิดใช้งานรายวิชาที่ไม่ต้องการใช้แล้ว</p>
+              </div>
             </div>
 
-            <div class="flex flex-wrap gap-2">
+            <div class="subject-management-actions">
               <button type="button"
-                      class="btn btn-primary"
-                      data-section="results">
-                ดูผลการสอบ
+                      id="btn-add-subject"
+                      class="btn btn-primary">
+                + เพิ่มวิชา
               </button>
 
               <button type="button"
-                      class="btn btn-secondary"
-                      data-section="summary">
-                ดูสรุปผล
+                      id="btn-delete-subject"
+                      class="btn btn-danger">
+                − ลบวิชา
               </button>
             </div>
           </div>
@@ -212,9 +215,14 @@
 
           <div class="page-header">
             <div>
-              <h1 class="page-title">จัดการข้อสอบ</h1>
-              <p class="page-description">
-                เพิ่ม แก้ไข และจัดการคลังข้อสอบ
+              <button type="button"
+                      id="btn-back-subjects"
+                      class="btn btn-secondary btn-sm">
+                ← กลับหน้ารายวิชา
+              </button>
+              <h1 id="question-page-subject-name" class="page-title">จัดการข้อสอบ</h1>
+              <p id="question-page-description" class="page-description">
+                แสดงข้อสอบทั้งหมดของรายวิชาที่เลือก พร้อมตัวเลือกและเฉลย
               </p>
             </div>
 
@@ -225,7 +233,15 @@
             </button>
           </div>
 
-          <div class="card mb-4">
+          <div class="card question-subject-context mb-4">
+            <div class="card-header">
+              <div class="card-title">คลังข้อสอบรายวิชา</div>
+              <span id="question-subject-context" class="badge badge-primary">ยังไม่ได้เลือกรายวิชา</span>
+            </div>
+            <p class="text-muted">รายการนี้รวมข้อสอบของรายวิชาที่เลือกจากทุกชุดสอบและรุ่น โดยแสดงชุดสอบกำกับในแต่ละข้อ</p>
+          </div>
+
+          <div class="card mb-4 hidden" aria-hidden="true">
             <div class="card-header">
               <div class="card-title">ค้นหาและกรองข้อสอบ</div>
             </div>
@@ -309,8 +325,9 @@
               <table class="table">
                 <thead>
                   <tr>
-                    <th width="65">ลำดับ</th>
-                    <th>คำถาม</th>
+                    <th width="65">ข้อ</th>
+                    <th>คำถามและตัวเลือก A–D</th>
+                    <th>ชุดสอบ / รุ่น</th>
                     <th width="80">คะแนน</th>
                     <th width="90">เฉลย</th>
                     <th width="100">สถานะ</th>
@@ -325,7 +342,7 @@
                  class="empty-state hidden">
               <div class="empty-state-title">ไม่พบข้อสอบ</div>
               <p class="empty-state-description">
-                เลือกรายวิชาและชุดข้อสอบเพื่อแสดงรายการ
+                รายวิชานี้ยังไม่มีข้อสอบ หรือยังไม่มีชุดสอบที่กำหนดไว้
               </p>
             </div>
           </div>
@@ -581,6 +598,81 @@
 
       </div>
     </main>
+  </div>
+
+  <!-- ================================================
+       ADD SUBJECT MODAL
+       ================================================ -->
+  <div id="subject-add-modal"
+       class="modal-overlay hidden"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="subject-add-modal-title">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="subject-add-modal-title" class="modal-title">เพิ่มรายวิชา</h3>
+        <button type="button" id="btn-close-subject-add-modal" class="btn btn-secondary btn-sm">ปิด</button>
+      </div>
+      <form id="subject-add-form">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="subject-add-code" class="form-label">รหัสวิชา <span class="required">*</span></label>
+            <input type="text" id="subject-add-code" name="subjectCode" class="form-control" maxlength="40" required>
+          </div>
+          <div class="form-group">
+            <label for="subject-add-name" class="form-label">ชื่อวิชา <span class="required">*</span></label>
+            <input type="text" id="subject-add-name" name="subjectName" class="form-control" maxlength="150" required>
+          </div>
+          <div class="form-group">
+            <label for="subject-add-description" class="form-label">คำอธิบาย</label>
+            <textarea id="subject-add-description" name="description" class="form-control" rows="3"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="subject-add-order" class="form-label">ลำดับการแสดงผล</label>
+            <input type="number" id="subject-add-order" name="displayOrder" class="form-control" min="1" step="1">
+          </div>
+          <div id="subject-add-form-error" class="alert alert-danger hidden" role="alert"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="btn-cancel-subject-add" class="btn btn-secondary">ยกเลิก</button>
+          <button type="submit" id="btn-save-subject" class="btn btn-primary">บันทึกวิชา</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================================================
+       DELETE / DEACTIVATE SUBJECT MODAL
+       ================================================ -->
+  <div id="subject-delete-modal"
+       class="modal-overlay hidden"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="subject-delete-modal-title">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="subject-delete-modal-title" class="modal-title">ลบหรือปิดใช้งานรายวิชา</h3>
+        <button type="button" id="btn-close-subject-delete-modal" class="btn btn-secondary btn-sm">ปิด</button>
+      </div>
+      <form id="subject-delete-form">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="subject-delete-select" class="form-label">เลือกรายวิชา</label>
+            <select id="subject-delete-select" name="subjectId" class="form-control" required>
+              <option value="">เลือกรายวิชา</option>
+            </select>
+          </div>
+          <div class="alert alert-warning">
+            ระบบจะตรวจสอบชุดสอบ ข้อสอบ และประวัติการสอบก่อนดำเนินการ หากมีข้อมูลอ้างอิงหรือประวัติสอบ ระบบจะปิดใช้งานแทนการลบจริง เพื่อรักษาข้อมูลย้อนหลัง
+          </div>
+          <div id="subject-delete-form-error" class="alert alert-danger hidden" role="alert"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="btn-cancel-subject-delete" class="btn btn-secondary">ยกเลิก</button>
+          <button type="submit" id="btn-confirm-subject-delete" class="btn btn-danger">ยืนยัน</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <!-- ================================================
