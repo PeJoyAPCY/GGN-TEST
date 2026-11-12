@@ -2594,3 +2594,230 @@ textarea.form-control {
         font-size: 10px;
     }
 }
+
+
+/* ======================================================
+   GGN TEST - FIX SUBJECT CAPSULE SWITCH
+   Version: 2.2.1
+   Purpose: Restore real capsule slider
+   ====================================================== */
+
+/* Subject grid */
+#dashboard-subject-list.subject-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    width: 100%;
+}
+
+/* Subject card */
+#dashboard-subject-list .subject-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 14px;
+    min-width: 0;
+    min-height: 140px;
+    padding: 14px;
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+
+/* Card header */
+#dashboard-subject-list .subject-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+#dashboard-subject-list .subject-card-info {
+    flex: 1;
+    min-width: 0;
+}
+
+#dashboard-subject-list .subject-card-name {
+    color: #171717;
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1.5;
+}
+
+#dashboard-subject-list .subject-card-meta {
+    margin-top: 4px;
+    color: #737373;
+    font-size: 11px;
+}
+
+#dashboard-subject-list .subject-status {
+    flex-shrink: 0;
+    padding: 4px 9px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+#dashboard-subject-list .subject-status.is-open {
+    background: #dcfce7;
+    color: #166534;
+}
+
+#dashboard-subject-list .subject-status.is-closed {
+    background: #f5f5f5;
+    color: #525252;
+}
+
+/* Bottom action row */
+#dashboard-subject-list .subject-card-actions {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px solid #eee;
+}
+
+/* Restore capsule label */
+#dashboard-subject-list .subject-card-actions label.subject-switch {
+    position: relative;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: flex-start !important;
+    gap: 9px;
+    width: 100% !important;
+    min-width: 0;
+    min-height: 34px !important;
+    height: auto !important;
+    margin: 0;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: #404040 !important;
+    cursor: pointer;
+}
+
+/* Hide native checkbox */
+#dashboard-subject-list .subject-switch input {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    opacity: 0 !important;
+    pointer-events: none;
+}
+
+/* Actual capsule track */
+#dashboard-subject-list .subject-card-actions .subject-switch-slider {
+    position: relative;
+    display: block !important;
+    flex: 0 0 53px;
+    width: 53px !important;
+    height: 30px !important;
+    border: 0 !important;
+    border-radius: 30px !important;
+    background: #d4d4d4 !important;
+    transition: background .2s ease;
+}
+
+#dashboard-subject-list .subject-switch-slider::before {
+    content: "";
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,.2);
+    transition: transform .2s ease;
+}
+
+/* ON state */
+#dashboard-subject-list .subject-switch input:checked + .subject-switch-slider {
+    background: #facc15 !important;
+}
+
+#dashboard-subject-list .subject-switch input:checked + .subject-switch-slider::before {
+    transform: translateX(23px);
+    background: #171717;
+}
+
+/* Switch text */
+#dashboard-subject-list .subject-switch-text {
+    display: inline !important;
+    color: #404040 !important;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+/* Focus and disabled */
+#dashboard-subject-list .subject-switch input:focus-visible + .subject-switch-slider {
+    outline: 3px solid rgba(250,204,21,.35);
+    outline-offset: 3px;
+}
+
+#dashboard-subject-list .subject-switch input:disabled + .subject-switch-slider {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+/* Manage button */
+#dashboard-subject-list .subject-manage-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
+    min-height: 34px;
+    padding: 7px 8px;
+    border: 1px solid #171717;
+    border-radius: 9px;
+    background: #171717;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+#dashboard-subject-list .subject-manage-btn:hover {
+    background: #404040;
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+    #dashboard-subject-list.subject-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+}
+
+@media (max-width: 380px) {
+    #dashboard-subject-list .subject-card-actions {
+        gap: 7px;
+    }
+
+    #dashboard-subject-list .subject-switch {
+        gap: 6px;
+    }
+
+    #dashboard-subject-list .subject-switch-slider {
+        flex-basis: 46px;
+        width: 46px !important;
+    }
+
+    #dashboard-subject-list .subject-switch input:checked + .subject-switch-slider::before {
+        transform: translateX(16px);
+    }
+
+    #dashboard-subject-list .subject-switch-text,
+    #dashboard-subject-list .subject-manage-btn {
+        font-size: 10px;
+    }
+}
