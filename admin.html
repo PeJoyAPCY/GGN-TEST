@@ -238,7 +238,7 @@
               <div class="card-title">คลังข้อสอบรายวิชา</div>
               <span id="question-subject-context" class="badge badge-primary">ยังไม่ได้เลือกรายวิชา</span>
             </div>
-            <p class="text-muted">รายการนี้รวมข้อสอบของรายวิชาที่เลือกจากทุกชุดสอบและรุ่น โดยแสดงชุดสอบกำกับในแต่ละข้อ</p>
+            <p class="text-muted">หนึ่งรายวิชามีข้อสอบหนึ่งชุด ระบบจะผูกข้อสอบเข้ากับชุดของรายวิชาให้อัตโนมัติ</p>
           </div>
 
           <div class="card mb-4 hidden" aria-hidden="true">
@@ -327,8 +327,7 @@
                   <tr>
                     <th width="65">ข้อ</th>
                     <th>คำถามและตัวเลือก A–D</th>
-                    <th>ชุดสอบ / รุ่น</th>
-                    <th width="80">คะแนน</th>
+                        <th width="80">คะแนน</th>
                     <th width="90">เฉลย</th>
                     <th width="100">สถานะ</th>
                     <th width="130">จัดการ</th>
@@ -715,19 +714,6 @@
                     class="form-control"
                     required>
               <option value="">เลือกรายวิชา</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="question-examset" class="form-label">
-              ชุดข้อสอบ <span class="required">*</span>
-            </label>
-            <select id="question-examset"
-                    name="examSetId"
-                    class="form-control"
-                    required
-                    disabled>
-              <option value="">เลือกรายวิชาก่อน</option>
             </select>
           </div>
 

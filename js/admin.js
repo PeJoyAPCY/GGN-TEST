@@ -638,12 +638,11 @@ function renderAdminDashboardSubjects() {
             const questionSubject = adminElement("question-subject");
             if (questionSubject) {
                 questionSubject.value = subjectId;
-                updateQuestionExamSetOptions();
             }
 
             adminText("question-page-subject-name", `จัดการข้อสอบ: ${name.textContent}`);
             adminText("question-subject-context", name.textContent);
-            adminText("question-page-description", "แสดงข้อสอบทั้งหมดของรายวิชานี้จากทุกชุดสอบและรุ่น");
+            adminText("question-page-description", "จัดการคลังข้อสอบของรายวิชานี้ โดยหนึ่งวิชามีหนึ่งชุดข้อสอบ");
 
             // ทิ้งผลลัพธ์คำขอเก่าทางตรรกะ ป้องกันข้อมูลข้ามวิชา
             GGNAdmin.questionRequestVersion += 1;
@@ -684,7 +683,6 @@ function populateQuestionFilters() {
     const examSetSelect = adminElement("filter-examset");
 
     const questionSubject = adminElement("question-subject");
-    const questionExamSet = adminElement("question-examset");
 
     const resultSubject = adminElement(
         "result-filter-subject"
@@ -738,11 +736,6 @@ function populateQuestionFilters() {
     });
 
     if (!GGNAdmin.filtersBound) {
-        questionSubject?.addEventListener(
-            "change",
-            updateQuestionExamSetOptions
-        );
-
         subjectSelect?.addEventListener(
             "change",
             () => {
@@ -759,70 +752,8 @@ function populateQuestionFilters() {
         GGNAdmin.filtersBound = true;
     }
 
-    if (questionSubject) {
-        updateQuestionExamSetOptions();
-    }
+    // ExamSet is resolved automatically by Backend from subjectId.
 }
-
-
-function updateQuestionExamSetOptions() {
-    const subjectSelect = adminElement("question-subject");
-    const examSetSelect = adminElement("question-examset");
-
-    if (!subjectSelect || !examSetSelect) return;
-
-    const subjectId = String(subjectSelect.value || "").trim();
-
-    const filtered = GGNAdmin.examSets.filter(item => {
-        return subjectId &&
-            String(item.subjectId || "").trim() === subjectId;
-    });
-
-    const previousValue = examSetSelect.value;
-
-    examSetSelect.replaceChildren();
-
-    const defaultOption = document.createElement("option");
-    defaultOption.value = "";
-    defaultOption.textContent = !subjectId
-        ? "เลือกรายวิชาก่อน"
-        : filtered.length
-            ? "เลือกชุดข้อสอบ"
-            : "วิชานี้ยังไม่มีชุดข้อสอบ";
-
-    examSetSelect.appendChild(defaultOption);
-
-    // The select is disabled in admin.html by default.
-    // Enable it only after a subject with at least one ExamSet is selected.
-    examSetSelect.disabled = !subjectId || filtered.length === 0;
-
-    filtered.forEach(examSet => {
-        const option = document.createElement("option");
-
-        option.value = examSet.examSetId;
-
-        option.textContent =
-            examSet.examSetName ||
-            examSet.name ||
-            examSet.examSetId;
-
-        examSetSelect.appendChild(option);
-    });
-
-    if (
-        previousValue &&
-        [...examSetSelect.options].some(
-            option => option.value === previousValue
-        )
-    ) {
-        examSetSelect.value = previousValue;
-    }
-}
-
-
-/* ======================================================
-   8. QUESTION MANAGEMENT
-====================================================== */
 
 async function loadAdminQuestions() {
     const requestVersion = ++GGNAdmin.questionRequestVersion;
@@ -947,7 +878,6 @@ function renderAdminQuestions() {
         contentCell.appendChild(choices);
         row.appendChild(contentCell);
 
-        row.appendChild(adminCreateCell(getQuestionExamSetName(question.examSetId)));
         row.appendChild(adminCreateCell(question.score ?? "-"));
 
         const answerCell = document.createElement("td");
@@ -985,6 +915,14 @@ function renderAdminQuestions() {
                 );
             }
 
+        actionCell.appendChild(
+            adminCreateButton(
+                "ลบ",
+                "btn btn-sm btn-danger",
+                () => deleteAdminQuestion(question)
+            )
+        );
+
         row.appendChild(actionCell);
         tbody.appendChild(row);
     });
@@ -1015,11 +953,6 @@ function openQuestionModal(question = null) {
 
     adminElement("question-subject").value =
         question?.subjectId || GGNAdmin.selectedSubjectId || "";
-
-    updateQuestionExamSetOptions();
-
-    adminElement("question-examset").value =
-        question?.examSetId || "";
 
     // Backend ใช้ questionNo
     adminElement("question-number").value =
@@ -1074,9 +1007,6 @@ function getQuestionFormData() {
         subjectId:
             adminElement("question-subject").value,
 
-        examSetId:
-            adminElement("question-examset").value,
-
         // ชื่อฟิลด์ตรงกับ Questions sheet
         questionNo:
             Number(adminElement("question-number").value),
@@ -1117,10 +1047,6 @@ function getQuestionFormData() {
 function validateQuestionForm(question) {
     if (!question.subjectId) {
         return "กรุณาเลือกวิชา";
-    }
-
-    if (!question.examSetId) {
-        return "กรุณาเลือกชุดข้อสอบ";
     }
 
     if (
@@ -1273,6 +1199,36 @@ async function deactivateAdminQuestion(questionId) {
             `ปิดใช้งานไม่สำเร็จ: ${error.message}`,
             "error"
         );
+    }
+}
+
+
+async function deleteAdminQuestion(question) {
+    if (!question?.questionId) {
+        adminShowAlert("ไม่พบรหัสข้อสอบที่ต้องการลบ", "error");
+        return;
+    }
+
+    const confirmed = window.confirm(
+        `ยืนยันลบข้อสอบข้อ ${question.questionNo || ""} หรือไม่?\n\n` +
+        "การลบจะนำรายการออกจากชีต Questions อย่างถาวร และไม่สามารถกู้คืนได้\n" +
+        "ระบบจะป้องกันการลบหากมีประวัติการสอบอ้างอิงอยู่"
+    );
+
+    if (!confirmed) return;
+
+    try {
+        await adminRequest("admin.question.delete", {
+            questionId: question.questionId
+        });
+
+        adminShowAlert("ลบข้อสอบเรียบร้อยแล้ว", "success");
+        await loadAdminQuestions();
+        await refreshAdminQuestionCount();
+
+    } catch (error) {
+        console.error("[GGN Admin] Delete question:", error);
+        adminShowAlert(`ลบข้อสอบไม่สำเร็จ: ${error.message}`, "error");
     }
 }
 
