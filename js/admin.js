@@ -48,6 +48,8 @@ const GGNAdmin = {
 
     currentQuestion: null,
     currentResult: null,
+    selectedSubjectId: "",
+    questionRequestVersion: 0,
 
     initialized: false,
     navigationBound: false,
@@ -619,12 +621,12 @@ function renderAdminDashboardSubjects() {
         manageButton.textContent = "จัดการข้อสอบ";
 
         manageButton.addEventListener("click", () => {
-            adminSwitchSection("questions");
+            // กำหนดวิชาก่อนเปลี่ยนหน้า เพราะการเปลี่ยนหน้า
+            // จะเรียก loadAdminQuestions() ให้อัตโนมัติ
+            GGNAdmin.selectedSubjectId = subjectId;
 
             const filterSubject = adminElement("filter-subject");
-            if (filterSubject) {
-                filterSubject.value = subjectId;
-            }
+            if (filterSubject) filterSubject.value = subjectId;
 
             const questionSubject = adminElement("question-subject");
             if (questionSubject) {
@@ -632,7 +634,15 @@ function renderAdminDashboardSubjects() {
                 updateQuestionExamSetOptions();
             }
 
-            loadAdminQuestions();
+            adminText("question-page-subject-name", `จัดการข้อสอบ: ${name.textContent}`);
+            adminText("question-subject-context", name.textContent);
+            adminText("question-page-description", "แสดงข้อสอบทั้งหมดของรายวิชานี้จากทุกชุดสอบและรุ่น");
+
+            // ทิ้งผลลัพธ์คำขอเก่าทางตรรกะ ป้องกันข้อมูลข้ามวิชา
+            GGNAdmin.questionRequestVersion += 1;
+            GGNAdmin.sectionRequests.questions = null;
+
+            adminSwitchSection("questions");
         });
 
         actions.append(switchLabel, manageButton);
@@ -726,7 +736,10 @@ function populateQuestionFilters() {
 
         subjectSelect?.addEventListener(
             "change",
-            loadAdminQuestions
+            () => {
+                GGNAdmin.selectedSubjectId = subjectSelect.value;
+                loadAdminQuestions();
+            }
         );
 
         examSetSelect?.addEventListener(
@@ -797,9 +810,10 @@ function updateQuestionExamSetOptions() {
 ====================================================== */
 
 async function loadAdminQuestions() {
-    if (GGNAdmin.sectionRequests.questions) {
-        return GGNAdmin.sectionRequests.questions;
-    }
+    const requestVersion = ++GGNAdmin.questionRequestVersion;
+    const selectedSubjectId = String(
+        GGNAdmin.selectedSubjectId || adminElement("filter-subject")?.value || ""
+    );
 
     const request = (async () => {
         adminSetLoading("question-list-loading", true);
@@ -807,55 +821,47 @@ async function loadAdminQuestions() {
         adminShow("question-list-empty", false);
 
         try {
+            if (!selectedSubjectId) {
+                GGNAdmin.questions = [];
+                renderAdminQuestions();
+                adminShowAlert("กรุณาเลือกรายวิชาจากหน้ารายวิชาก่อน", "warning");
+                return false;
+            }
+
             const payload = {
-                subjectId:
-                    adminElement("filter-subject")?.value || "",
-
-                examSetId:
-                    adminElement("filter-examset")?.value || "",
-
-                status:
-                    adminElement("filter-question-status")?.value || "",
-
-                keyword:
-                    adminElement("question-search")?.value.trim() || ""
+                subjectId: selectedSubjectId,
+                // คลังรายวิชาแสดงทุกชุดสอบ จึงไม่จำกัด examSetId
+                examSetId: "",
+                status: adminElement("filter-question-status")?.value || "",
+                keyword: adminElement("question-search")?.value.trim() || ""
             };
 
-            const response = await adminRequest(
-                "admin.questions",
-                payload
-            );
+            const response = await adminRequest("admin.questions", payload);
 
-            GGNAdmin.questions = adminGetArray(
-                response,
-                ["questions", "items"]
-            );
+            if (requestVersion !== GGNAdmin.questionRequestVersion) return false;
 
+            GGNAdmin.questions = adminGetArray(response, ["questions", "items"]);
             renderAdminQuestions();
-
             return true;
 
         } catch (error) {
-            console.error("[GGN Admin] Questions:", error);
-
-            adminShowAlert(
-                `โหลดรายการข้อสอบไม่สำเร็จ: ${error.message}`,
-                "error"
-            );
-
+            if (requestVersion === GGNAdmin.questionRequestVersion) {
+                console.error("[GGN Admin] Questions:", error);
+                adminShowAlert(`โหลดรายการข้อสอบไม่สำเร็จ: ${error.message}`, "error");
+            }
             return false;
 
         } finally {
-            adminSetLoading("question-list-loading", false);
-            GGNAdmin.sectionRequests.questions = null;
+            if (requestVersion === GGNAdmin.questionRequestVersion) {
+                adminSetLoading("question-list-loading", false);
+                GGNAdmin.sectionRequests.questions = null;
+            }
         }
     })();
 
     GGNAdmin.sectionRequests.questions = request;
-
     return request;
 }
-
 
 function getQuestionSubjectName(subjectId) {
     const subject = GGNAdmin.subjects.find(
@@ -889,15 +895,10 @@ function getQuestionExamSetName(examSetId) {
 
 function renderAdminQuestions() {
     const tbody = adminElement("question-table-body");
-
     if (!tbody) return;
 
     tbody.replaceChildren();
-
-    adminText(
-        "question-count",
-        adminFormatNumber(GGNAdmin.questions.length)
-    );
+    adminText("question-count", `${adminFormatNumber(GGNAdmin.questions.length)} ข้อ`);
 
     if (!GGNAdmin.questions.length) {
         adminShow("question-table-container", false);
@@ -910,55 +911,53 @@ function renderAdminQuestions() {
 
     GGNAdmin.questions.forEach((question, index) => {
         const row = document.createElement("tr");
+        row.appendChild(adminCreateCell(question.questionNo ?? index + 1));
 
-        const questionText =
-            question.questionText ||
-            question.question ||
-            "";
+        // คำถามและตัวเลือก A-D
+        const contentCell = document.createElement("td");
+        const questionText = document.createElement("div");
+        questionText.className = "question-text";
+        questionText.textContent = question.questionText || question.question || "(ไม่มีข้อความคำถาม)";
+        contentCell.appendChild(questionText);
 
-        const cells = [
-            index + 1,
-            getQuestionSubjectName(question.subjectId),
-            getQuestionExamSetName(question.examSetId),
-            questionText,
-            question.score ?? "-",
-            question.status || "-"
-        ];
-
-        cells.forEach(value => {
-            row.appendChild(adminCreateCell(value));
+        const choices = document.createElement("div");
+        choices.className = "question-choices";
+        ["A", "B", "C", "D"].forEach(letter => {
+            const choice = document.createElement("div");
+            choice.className = "question-choice" +
+                (String(question.correctAnswer || "").toUpperCase() === letter ? " is-correct" : "");
+            choice.textContent = `${letter}. ${question[`choice${letter}`] || "(ไม่มีตัวเลือก)"}`;
+            choices.appendChild(choice);
         });
+        contentCell.appendChild(choices);
+        row.appendChild(contentCell);
+
+        row.appendChild(adminCreateCell(getQuestionExamSetName(question.examSetId)));
+        row.appendChild(adminCreateCell(question.score ?? "-"));
+
+        const answerCell = document.createElement("td");
+        const answer = document.createElement("span");
+        answer.className = "question-answer";
+        answer.textContent = String(question.correctAnswer || "-").toUpperCase();
+        answerCell.appendChild(answer);
+        row.appendChild(answerCell);
+
+        row.appendChild(adminCreateCell(question.status || "-"));
 
         const actionCell = document.createElement("td");
+        actionCell.appendChild(adminCreateButton("แก้ไข", "btn btn-sm btn-primary", () => openQuestionModal(question)));
 
-        const editButton = adminCreateButton(
-            "แก้ไข",
-            "btn btn-sm btn-primary",
-            () => openQuestionModal(question)
-        );
-
-        actionCell.appendChild(editButton);
-
-        const isActive =
-            String(question.status || "").toUpperCase() === "ACTIVE";
-
-        if (isActive) {
-            const deactivateButton = adminCreateButton(
-                "ปิดใช้งาน",
-                "btn btn-sm btn-danger",
-                () => deactivateAdminQuestion(
-                    question.questionId
-                )
-            );
-
-            actionCell.appendChild(deactivateButton);
+        if (String(question.status || "").toUpperCase() === "ACTIVE") {
+            actionCell.appendChild(adminCreateButton(
+                "ปิดใช้งาน", "btn btn-sm btn-danger",
+                () => deactivateAdminQuestion(question.questionId)
+            ));
         }
 
         row.appendChild(actionCell);
         tbody.appendChild(row);
     });
 }
-
 
 /* ======================================================
    9. QUESTION MODAL
@@ -984,7 +983,7 @@ function openQuestionModal(question = null) {
         question?.questionId || "";
 
     adminElement("question-subject").value =
-        question?.subjectId || "";
+        question?.subjectId || GGNAdmin.selectedSubjectId || "";
 
     updateQuestionExamSetOptions();
 
