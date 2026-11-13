@@ -2072,6 +2072,7 @@ function setAdminSummaryView(view) {
 }
 
 
+
 /* ======================================================
    16. EVENT BINDINGS
 ====================================================== */
@@ -2080,14 +2081,28 @@ function setupAdminEvents() {
     if (GGNAdmin.eventsBound) return;
 
     // ==========================================
-    // 1. QUESTION FORM
+    // 1. ADD QUESTION
+    // ==========================================
+
+    const addQuestionButton = adminElement("btn-add-question");
+
+    if (addQuestionButton) {
+        addQuestionButton.addEventListener("click", function (event) {
+            event.preventDefault();
+
+            // เปิด Modal สำหรับเพิ่มข้อสอบใหม่
+            openQuestionModal();
+        });
+    }
+
+    // ==========================================
+    // 2. QUESTION FORM
     // ==========================================
 
     const questionForm = adminElement("question-form");
     const saveButton = adminElement("btn-save-question");
 
     if (questionForm) {
-        // ใช้ JavaScript ตรวจสอบข้อมูลแทน Browser
         questionForm.noValidate = true;
 
         // รองรับการกด Enter ภายในฟอร์ม
@@ -2098,9 +2113,8 @@ function setupAdminEvents() {
     }
 
     if (saveButton) {
-        // รองรับกรณีปุ่มอยู่นอก form
-        saveButton.type = "button";
-
+        // คง type="submit" ไว้
+        // แต่ผูก Click โดยตรงเพื่อรองรับทุกกรณี
         saveButton.addEventListener("click", function (event) {
             event.preventDefault();
             saveAdminQuestion(event);
@@ -2108,37 +2122,138 @@ function setupAdminEvents() {
     }
 
     // ==========================================
-    // 2. QUESTION SEARCH
+    // 3. CLOSE QUESTION MODAL
+    // ==========================================
+
+    const closeQuestionButton = adminElement(
+        "btn-close-question-modal"
+    );
+
+    const cancelQuestionButton = adminElement(
+        "btn-cancel-question"
+    );
+
+    closeQuestionButton?.addEventListener("click", function () {
+        closeQuestionModal();
+    });
+
+    cancelQuestionButton?.addEventListener("click", function () {
+        closeQuestionModal();
+    });
+
+    // ==========================================
+    // 4. BACK TO SUBJECTS
+    // ==========================================
+
+    const backButton = adminElement("btn-back-subjects");
+
+    backButton?.addEventListener("click", function () {
+        GGNAdmin.selectedSubjectId = "";
+        adminSwitchSection("dashboard");
+    });
+
+    // ==========================================
+    // 5. QUESTION SEARCH
     // ==========================================
 
     const questionSearch = adminElement("question-search");
 
-    if (questionSearch) {
-        questionSearch.addEventListener("input", function () {
-            loadAdminQuestions();
-        });
-    }
+    questionSearch?.addEventListener("input", function () {
+        loadAdminQuestions();
+    });
+
+    const searchQuestionButton = adminElement(
+        "btn-search-questions"
+    );
+
+    searchQuestionButton?.addEventListener("click", function () {
+        loadAdminQuestions();
+    });
 
     // ==========================================
-    // 3. QUESTION STATUS FILTER
+    // 6. QUESTION STATUS FILTER
     // ==========================================
 
     const questionStatusFilter = adminElement(
         "filter-question-status"
     );
 
-    if (questionStatusFilter) {
-        questionStatusFilter.addEventListener("change", function () {
-            loadAdminQuestions();
-        });
-    }
+    questionStatusFilter?.addEventListener("change", function () {
+        loadAdminQuestions();
+    });
 
     // ==========================================
-    // 4. INITIALIZATION
+    // 7. DASHBOARD REFRESH
+    // ==========================================
+
+    adminElement("btn-refresh-dashboard")
+        ?.addEventListener("click", function () {
+            GGNAdmin.sectionRequests.dashboard = null;
+            loadAdminDashboard();
+        });
+
+    // ==========================================
+    // 8. RESULTS
+    // ==========================================
+
+    adminElement("btn-refresh-results")
+        ?.addEventListener("click", function () {
+            GGNAdmin.sectionRequests.results = null;
+            loadAdminResults();
+        });
+
+    adminElement("btn-search-results")
+        ?.addEventListener("click", function () {
+            loadAdminResults();
+        });
+
+    // ==========================================
+    // 9. SUMMARY
+    // ==========================================
+
+    adminElement("btn-refresh-summary")
+        ?.addEventListener("click", function () {
+            GGNAdmin.sectionRequests.summary = null;
+            loadAdminSummary();
+        });
+
+    adminElement("btn-load-summary")
+        ?.addEventListener("click", function () {
+            GGNAdmin.sectionRequests.summary = null;
+            loadAdminSummary();
+        });
+
+    document.querySelectorAll("[data-summary-view]")
+        .forEach(function (button) {
+            button.addEventListener("click", function () {
+                setAdminSummaryView(button.dataset.summaryView);
+            });
+        });
+
+    // ==========================================
+    // 10. SCORE FORM
+    // ==========================================
+
+    const scoreForm = adminElement("score-form");
+
+    scoreForm?.addEventListener("submit", function (event) {
+        event.preventDefault();
+        saveAdjustedScore(event);
+    });
+
+    adminElement("btn-close-score-modal")
+        ?.addEventListener("click", closeScoreModal);
+
+    adminElement("btn-cancel-score")
+        ?.addEventListener("click", closeScoreModal);
+
+    // ==========================================
+    // 11. INITIALIZATION
     // ==========================================
 
     GGNAdmin.eventsBound = true;
 }
+
 
 /* ======================================================
    17. INITIALIZATION
