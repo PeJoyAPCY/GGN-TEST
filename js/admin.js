@@ -55,6 +55,7 @@ const GGNAdmin = {
     navigationBound: false,
     eventsBound: false,
     filtersBound: false,
+    isSavingQuestion: false,
 
     sectionRequests: {
         dashboard: null,
@@ -953,12 +954,28 @@ function renderAdminQuestions() {
         const actionCell = document.createElement("td");
         actionCell.appendChild(adminCreateButton("แก้ไข", "btn btn-sm btn-primary", () => openQuestionModal(question)));
 
-        if (String(question.status || "").toUpperCase() === "ACTIVE") {
-            actionCell.appendChild(adminCreateButton(
-                "ปิดใช้งาน", "btn btn-sm btn-danger",
-                () => deactivateAdminQuestion(question.questionId)
-            ));
-        }
+        
+            const questionStatus = String(
+                question.status || ""
+            ).toUpperCase();
+
+            if (questionStatus === "ACTIVE") {
+                actionCell.appendChild(
+                    adminCreateButton(
+                        "ปิดใช้งาน",
+                        "btn btn-sm btn-danger",
+                        () => setAdminQuestionStatus(question, "INACTIVE")
+                    )
+                );
+            } else if (questionStatus === "INACTIVE") {
+                actionCell.appendChild(
+                    adminCreateButton(
+                        "เปิดใช้งาน",
+                        "btn btn-sm btn-success",
+                        () => setAdminQuestionStatus(question, "ACTIVE")
+                    )
+                );
+            }
 
         row.appendChild(actionCell);
         tbody.appendChild(row);
@@ -1137,8 +1154,11 @@ function validateQuestionForm(question) {
 }
 
 
+
 async function saveAdminQuestion(event) {
-    event.preventDefault();
+    event?.preventDefault();
+
+    if (GGNAdmin.isSavingQuestion) return;
 
     adminShowFormError("question-form-error", "");
 
@@ -1150,7 +1170,6 @@ async function saveAdminQuestion(event) {
             "question-form-error",
             validationError
         );
-
         return;
     }
 
@@ -1161,6 +1180,8 @@ async function saveAdminQuestion(event) {
         : "admin.question.create";
 
     const saveButton = adminElement("btn-save-question");
+
+    GGNAdmin.isSavingQuestion = true;
 
     if (saveButton) {
         saveButton.disabled = true;
@@ -1187,16 +1208,19 @@ async function saveAdminQuestion(event) {
 
         adminShowFormError(
             "question-form-error",
-            error.message
+            error.message || "ไม่สามารถบันทึกข้อสอบได้"
         );
 
     } finally {
+        GGNAdmin.isSavingQuestion = false;
+
         if (saveButton) {
             saveButton.disabled = false;
             saveButton.textContent = "บันทึก";
         }
     }
 }
+
 
 
 /* ======================================================
@@ -1239,6 +1263,84 @@ async function deactivateAdminQuestion(questionId) {
 
         adminShowAlert(
             `ปิดใช้งานไม่สำเร็จ: ${error.message}`,
+            "error"
+        );
+    }
+}
+
+
+async function setAdminQuestionStatus(question, nextStatus) {
+    if (!question || !question.questionId) {
+        adminShowAlert("ไม่พบข้อมูลข้อสอบ", "error");
+        return;
+    }
+
+    const currentStatus = String(
+        question.status || ""
+    ).toUpperCase();
+
+    if (!["ACTIVE", "INACTIVE"].includes(nextStatus)) {
+        return;
+    }
+
+    if (currentStatus === nextStatus) return;
+
+    const actionText = nextStatus === "ACTIVE"
+        ? "เปิดใช้งาน"
+        : "ปิดใช้งาน";
+
+    const confirmed = window.confirm(
+        `ต้องการ${actionText}ข้อสอบข้อนี้หรือไม่?\n\n` +
+        "ข้อมูลคำถาม ตัวเลือก และเฉลยจะยังคงเดิม"
+    );
+
+    if (!confirmed) return;
+
+    try {
+        const payload = {
+            questionId: question.questionId,
+            subjectId: question.subjectId,
+            examSetId: question.examSetId,
+            questionNo: Number(question.questionNo),
+            questionText: question.questionText || "",
+            questionImageUrl: question.questionImageUrl || "",
+            choiceA: question.choiceA || "",
+            choiceB: question.choiceB || "",
+            choiceC: question.choiceC || "",
+            choiceD: question.choiceD || "",
+            correctAnswer: String(
+                question.correctAnswer || ""
+            ).toUpperCase(),
+            explanation: question.explanation || "",
+            score: Number(question.score),
+            status: nextStatus
+        };
+
+        if (question.notes !== undefined) {
+            payload.notes = question.notes;
+        }
+
+        await adminRequest(
+            "admin.question.update",
+            payload
+        );
+
+        adminShowAlert(
+            `${actionText}ข้อสอบเรียบร้อยแล้ว`,
+            "success"
+        );
+
+        await loadAdminQuestions();
+        await refreshAdminQuestionCount();
+
+    } catch (error) {
+        console.error(
+            "[GGN Admin] Change question status:",
+            error
+        );
+
+        adminShowAlert(
+            `${actionText}ไม่สำเร็จ: ${error.message}`,
             "error"
         );
     }
@@ -1977,102 +2079,66 @@ function setAdminSummaryView(view) {
 function setupAdminEvents() {
     if (GGNAdmin.eventsBound) return;
 
-    adminElement("btn-refresh-dashboard")
-        ?.addEventListener("click", loadAdminDashboard);
+    // ==========================================
+    // 1. QUESTION FORM
+    // ==========================================
 
-    adminElement("btn-add-question")
-        ?.addEventListener("click", () => {
-            openQuestionModal();
+    const questionForm = adminElement("question-form");
+    const saveButton = adminElement("btn-save-question");
+
+    if (questionForm) {
+        // ใช้ JavaScript ตรวจสอบข้อมูลแทน Browser
+        questionForm.noValidate = true;
+
+        // รองรับการกด Enter ภายในฟอร์ม
+        questionForm.addEventListener("submit", function (event) {
+            event.preventDefault();
+            saveAdminQuestion(event);
         });
+    }
 
-    adminElement("btn-search-questions")
-        ?.addEventListener("click", loadAdminQuestions);
+    if (saveButton) {
+        // รองรับกรณีปุ่มอยู่นอก form
+        saveButton.type = "button";
 
-    adminElement("btn-reset-question-filter")
-        ?.addEventListener("click", () => {
-            adminElement("filter-subject").value = "";
-            adminElement("filter-examset").value = "";
-            adminElement("filter-question-status").value = "";
-            adminElement("question-search").value = "";
+        saveButton.addEventListener("click", function (event) {
+            event.preventDefault();
+            saveAdminQuestion(event);
+        });
+    }
 
+    // ==========================================
+    // 2. QUESTION SEARCH
+    // ==========================================
+
+    const questionSearch = adminElement("question-search");
+
+    if (questionSearch) {
+        questionSearch.addEventListener("input", function () {
             loadAdminQuestions();
         });
+    }
 
-    adminElement("question-search")
-        ?.addEventListener("keydown", event => {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                loadAdminQuestions();
-            }
+    // ==========================================
+    // 3. QUESTION STATUS FILTER
+    // ==========================================
+
+    const questionStatusFilter = adminElement(
+        "filter-question-status"
+    );
+
+    if (questionStatusFilter) {
+        questionStatusFilter.addEventListener("change", function () {
+            loadAdminQuestions();
         });
+    }
 
-    adminElement("filter-question-status")
-        ?.addEventListener("change", loadAdminQuestions);
-
-    adminElement("btn-close-question-modal")
-        ?.addEventListener("click", closeQuestionModal);
-
-    adminElement("btn-cancel-question")
-        ?.addEventListener("click", closeQuestionModal);
-
-    adminElement("question-form")
-        ?.addEventListener("submit", saveAdminQuestion);
-
-    adminElement("btn-refresh-results")
-        ?.addEventListener("click", loadAdminResults);
-
-    adminElement("btn-search-results")
-        ?.addEventListener("click", loadAdminResults);
-
-    adminElement("result-filter-subject")
-        ?.addEventListener("change", loadAdminResults);
-
-    adminElement("result-filter-cohort")
-        ?.addEventListener("change", loadAdminResults);
-
-    adminElement("result-search")
-        ?.addEventListener("keydown", event => {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                loadAdminResults();
-            }
-        });
-
-    adminElement("btn-close-score-modal")
-        ?.addEventListener("click", closeScoreModal);
-
-    adminElement("btn-cancel-score")
-        ?.addEventListener("click", closeScoreModal);
-
-    adminElement("score-form")
-        ?.addEventListener("submit", saveAdjustedScore);
-
-    adminElement("btn-admin-confirm-cancel")
-        ?.addEventListener("click", () => {
-            adminShow("admin-confirm-modal", false);
-        });
-
-    adminElement("btn-refresh-summary")
-        ?.addEventListener("click", loadAdminSummary);
-
-    adminElement("btn-load-summary")
-        ?.addEventListener("click", loadAdminSummary);
-
-    adminElement("summary-filter-cohort")
-        ?.addEventListener("change", loadAdminSummary);
-
-    document.querySelectorAll("[data-summary-view]")
-        .forEach(button => {
-            button.addEventListener("click", () => {
-                setAdminSummaryView(
-                    button.dataset.summaryView
-                );
-            });
-        });
+    // ==========================================
+    // 4. INITIALIZATION
+    // ==========================================
 
     GGNAdmin.eventsBound = true;
 }
-
 
 /* ======================================================
    17. INITIALIZATION
