@@ -131,41 +131,49 @@
           id="selection-info"
           class="alert alert-info"
         >
-          กรุณาเลือกชื่อของท่านเพื่อเข้าสู่ระบบทดสอบ
+          กรุณากรอกเลขบัตรประชาชน 13 หลัก เพื่อยืนยันตัวตนก่อนเข้าสู่ระบบทดสอบ
         </div>
 
 
-        <!-- Examinee Selection Form -->
+        <!-- National ID Login Form -->
 
-        <form id="examinee-selection-form">
+        <form id="examinee-selection-form" autocomplete="off">
 
           <div class="form-group">
 
             <label
-              for="examinee-select"
+              for="examinee-national-id"
               class="form-label"
             >
-              ชื่อผู้เข้าสอบ
+              เลขบัตรประจำตัวประชาชน
               <span class="required">*</span>
             </label>
 
-            <select
-              id="examinee-select"
-              name="examineeId"
+            <input
+              type="text"
+              id="examinee-national-id"
+              name="nationalId"
               class="form-control"
+              inputmode="numeric"
+              pattern="[0-9]{13}"
+              maxlength="13"
+              minlength="13"
+              autocomplete="off"
+              autocapitalize="off"
+              spellcheck="false"
+              placeholder="กรอกเลขบัตรประชาชน 13 หลัก"
               required
-              disabled
+              aria-describedby="national-id-help national-id-error"
             >
 
-              <option value="">
-                กำลังโหลดรายชื่อผู้เข้าสอบ...
-              </option>
-
-            </select>
+            <small id="national-id-help" class="text-secondary">
+              ระบบจะใช้เลขนี้ตรวจสอบชื่อและรุ่นการสอบของท่าน
+            </small>
 
             <div
-              id="examinee-select-error"
+              id="national-id-error"
               class="form-error hidden"
+              role="alert"
             ></div>
 
           </div>
@@ -176,46 +184,26 @@
           <div
             id="examinee-information"
             class="card mb-4 hidden"
+            aria-live="polite"
           >
 
             <div class="card-title mb-2">
-              ข้อมูลผู้เข้าสอบ
+              โปรดตรวจสอบข้อมูลของท่าน
             </div>
 
             <div class="form-group">
-
-              <div class="text-secondary">
-                ชื่อ-นามสกุล
-              </div>
-
-              <strong id="selected-examinee-name">
-                -
-              </strong>
-
+              <div class="text-secondary">ชื่อ-นามสกุล</div>
+              <strong id="selected-examinee-name">-</strong>
             </div>
 
             <div class="form-group">
-
-              <div class="text-secondary">
-                รหัสพนักงาน
-              </div>
-
-              <strong id="selected-examinee-code">
-                -
-              </strong>
-
+              <div class="text-secondary">รหัสพนักงาน</div>
+              <strong id="selected-examinee-code">-</strong>
             </div>
 
             <div class="form-group">
-
-              <div class="text-secondary">
-                รุ่นการทดสอบ
-              </div>
-
-              <strong id="selected-examinee-cohort">
-                -
-              </strong>
-
+              <div class="text-secondary">รุ่นการทดสอบ</div>
+              <strong id="selected-examinee-cohort">-</strong>
             </div>
 
           </div>
@@ -227,16 +215,15 @@
             class="btn btn-primary btn-block btn-lg"
             disabled
           >
-            เข้าสู่ระบบทดสอบ
+            ตรวจสอบเลขบัตรประชาชน
           </button>
 
         </form>
 
-
         <div class="card-footer text-center">
 
           <p class="text-muted">
-            หากไม่พบรายชื่อ กรุณาติดต่อเจ้าหน้าที่
+            หากตรวจสอบข้อมูลไม่สำเร็จ กรุณาติดต่อเจ้าหน้าที่
           </p>
 
         </div>

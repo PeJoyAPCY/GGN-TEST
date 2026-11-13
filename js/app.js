@@ -14,6 +14,8 @@
 
 const GGNApp = {
   examinee: null,
+  pendingIdentity: null,
+  sessionToken: null,
   subjects: [],
   session: null,
 
@@ -31,7 +33,6 @@ const GGNApp = {
 
   confirmCallback: null,
 
-  storageKey: "ggnTestExaminee"
 };
 
 
@@ -92,7 +93,9 @@ function setButtonLoading(buttonId, loading, loadingText = "กำลังด�
     button.textContent = loadingText;
 
   } else {
-    button.disabled = false;
+    button.disabled = buttonId === "btn-enter-system"
+      ? String($("examinee-national-id")?.value || "").length !== 13
+      : false;
 
     if (button.dataset.originalText) {
       button.textContent = button.dataset.originalText;
@@ -263,115 +266,29 @@ function setConnectionStatus(status, message) {
 
 
 /* ======================================================
-   8. LOCAL STORAGE
-   ====================================================== */
-
-function saveExamineeToStorage(examinee) {
-  if (!examinee || !examinee.examineeId) {
-    return;
-  }
-
-  try {
-    localStorage.setItem(
-      GGNApp.storageKey,
-      JSON.stringify({
-        examineeId: examinee.examineeId,
-        savedAt: new Date().toISOString()
-      })
-    );
-
-  } catch (error) {
-    console.warn(
-      "[GGN TEST] Cannot save examinee selection:",
-      error
-    );
-  }
-}
-
-function getSavedExamineeId() {
-  try {
-    const saved = localStorage.getItem(
-      GGNApp.storageKey
-    );
-
-    if (!saved) return null;
-
-    const data = JSON.parse(saved);
-
-    return data.examineeId || null;
-
-  } catch (error) {
-    return null;
-  }
-}
-
-function clearSavedExaminee() {
-  try {
-    localStorage.removeItem(
-      GGNApp.storageKey
-    );
-  } catch (error) {
-    console.warn(error);
-  }
-}
-
-
-/* ======================================================
-   9. EXAMINEE INITIALIZATION
+   8. EXAMINEE INITIALIZATION
    ====================================================== */
 
 async function initializeGGNApp() {
   showLoading("กำลังเชื่อมต่อระบบ GGN Test");
-
-  setConnectionStatus(
-    "checking",
-    "กำลังตรวจสอบระบบ"
-  );
+  setConnectionStatus("checking", "กำลังตรวจสอบระบบ");
 
   try {
-
-    await loadExaminees();
-
-    const savedId = getSavedExamineeId();
-
-    if (savedId) {
-      const savedExaminee =
-        findExamineeById(savedId);
-
-      if (savedExaminee) {
-        GGNApp.examinee = savedExaminee;
-
-        saveExamineeToStorage(savedExaminee);
-
-        await loadExamineeDashboard();
-
-        return;
-      }
-    }
-
+    // Session อยู่ในหน่วยความจำของหน้านี้เท่านั้น ไม่บันทึกเลขบัตร
+    // หรือ examineeId ลง localStorage/sessionStorage
+    GGNApp.examinee = null;
+    GGNApp.pendingIdentity = null;
+    GGNApp.sessionToken = null;
     showSection("selection-section");
+    resetIdentityForm();
 
-    setConnectionStatus(
-      "online",
-      "เชื่อมต่อระบบแล้ว"
-    );
+    await GGNApi.request("system.ping", {}, { retry: false });
 
+    setConnectionStatus("online", "เชื่อมต่อระบบแล้ว");
   } catch (error) {
-
-    console.error(
-      "[GGN TEST] Initialization failed:",
-      error
-    );
-
-    setConnectionStatus(
-      "offline",
-      "ไม่สามารถเชื่อมต่อระบบได้"
-    );
-
-    showSystemError(
-      getErrorMessage(error)
-    );
-
+    console.error("[GGN TEST] Initialization failed:", error);
+    setConnectionStatus("offline", "ไม่สามารถเชื่อมต่อระบบได้");
+    showSystemError(getErrorMessage(error));
   } finally {
     hideLoading();
   }
@@ -379,241 +296,165 @@ async function initializeGGNApp() {
 
 
 /* ======================================================
-   10. LOAD EXAMINEES
+   9. NATIONAL ID IDENTITY CHECK
    ====================================================== */
 
-async function loadExaminees() {
-  const response = await GGNApi.request(
-    "exam.examinees",
-    {},
-    {
-      retry: false
-    }
-  );
-
-  const examinees = getResponseArray(
-    response,
-    [
-      "examinees",
-      "items",
-      "records"
-    ]
-  );
-
-  renderExamineeOptions(examinees);
-}
-
-function renderExamineeOptions(examinees) {
-  const select = $("examinee-select");
-
-  if (!select) return;
-
-  select.innerHTML = "";
-
-  const defaultOption =
-    document.createElement("option");
-
-  defaultOption.value = "";
-  defaultOption.textContent =
-    "กรุณาเลือกชื่อผู้เข้าสอบ";
-
-  select.appendChild(defaultOption);
-
-  const activeExaminees = examinees.filter(item => {
-    return (
-      item.status === "ACTIVE" &&
-      item.examineeId &&
-      item.fullName
-    );
-  });
-
-  activeExaminees.sort((a, b) => {
-    return String(a.fullName).localeCompare(
-      String(b.fullName),
-      "th"
-    );
-  });
-
-  activeExaminees.forEach(examinee => {
-    const option =
-      document.createElement("option");
-
-    option.value = examinee.examineeId;
-
-    option.textContent =
-      examinee.fullName +
-      (
-        examinee.employeeCode
-          ? ` (${examinee.employeeCode})`
-          : ""
-      );
-
-    select.appendChild(option);
-  });
-
-  select.disabled = activeExaminees.length === 0;
-
-  GGNApp.examinees = activeExaminees;
-
-  if (activeExaminees.length === 0) {
-    defaultOption.textContent =
-      "ไม่พบรายชื่อผู้เข้าสอบที่ใช้งานได้";
-  }
-
-  updateEnterButton();
-}
-
-function findExamineeById(examineeId) {
-  return (GGNApp.examinees || []).find(item => {
-    return item.examineeId === examineeId;
-  }) || null;
-}
-
-function updateEnterButton() {
-  const select = $("examinee-select");
+function resetIdentityForm() {
+  const input = $("examinee-national-id");
+  if (input) input.value = "";
+  GGNApp.pendingIdentity = null;
+  hideElement("examinee-information");
+  hideElement("national-id-error");
   const button = $("btn-enter-system");
-
-  if (!select || !button) return;
-
-  button.disabled = !select.value;
+  if (button) {
+    button.disabled = true;
+    button.textContent = "ตรวจสอบเลขบัตรประชาชน";
+  }
 }
 
+function showNationalIdError(message) {
+  const error = $("national-id-error");
+  if (!error) return;
+  error.textContent = message || "ไม่สามารถตรวจสอบข้อมูลได้";
+  error.classList.remove("hidden");
+}
 
-/* ======================================================
-   11. EXAMINEE SELECTION
-   ====================================================== */
-
-function handleExamineeSelection() {
-  const select = $("examinee-select");
-
-  if (!select) return;
-
-  const examinee =
-    findExamineeById(select.value);
-
-  updateEnterButton();
-
-  const information =
-    $("examinee-information");
-
-  if (!examinee) {
-    information?.classList.add("hidden");
-    return;
+function handleNationalIdInput() {
+  const input = $("examinee-national-id");
+  if (!input) return;
+  input.value = input.value.replace(/\D/g, "").slice(0, 13);
+  GGNApp.pendingIdentity = null;
+  hideElement("examinee-information");
+  hideElement("national-id-error");
+  const button = $("btn-enter-system");
+  if (button) {
+    button.disabled = input.value.length !== 13;
+    button.textContent = "ตรวจสอบเลขบัตรประชาชน";
   }
-
-  setText(
-    "selected-examinee-name",
-    examinee.fullName
-  );
-
-  setText(
-    "selected-examinee-code",
-    examinee.employeeCode || "-"
-  );
-
-  setText(
-    "selected-examinee-cohort",
-    examinee.cohortName ||
-    examinee.cohortCode ||
-    examinee.cohortId ||
-    "-"
-  );
-
-  information?.classList.remove("hidden");
 }
 
 async function handleEnterSystem(event) {
   event.preventDefault();
+  hideElement("national-id-error");
 
-  const select = $("examinee-select");
-
-  if (!select || !select.value) {
-    showAlert(
-      "กรุณาเลือกชื่อผู้เข้าสอบ",
-      "warning"
-    );
-
+  const input = $("examinee-national-id");
+  const nationalId = String(input?.value || "").trim();
+  if (!/^\d{13}$/.test(nationalId)) {
+    showNationalIdError("กรุณากรอกเลขบัตรประชาชนให้ครบ 13 หลัก");
+    input?.focus();
     return;
   }
 
-  const examinee =
-    findExamineeById(select.value);
-
-  if (!examinee) {
-    showAlert(
-      "ไม่พบข้อมูลผู้เข้าสอบ กรุณาเลือกใหม่",
-      "danger"
-    );
-
+  const button = $("btn-enter-system");
+  if (GGNApp.pendingIdentity) {
+    await confirmExamineeIdentity(nationalId);
     return;
   }
 
-  GGNApp.examinee = examinee;
+  setButtonLoading("btn-enter-system", true, "กำลังตรวจสอบข้อมูล...");
+  showLoading("กำลังตรวจสอบข้อมูลผู้เข้าสอบ");
+  try {
+    const response = await GGNApi.request(
+      "identity.lookup",
+      { nationalId },
+      { retry: false }
+    );
+    const profile = getResponseData(response) || {};
+    if (!profile.firstName || !profile.cohortId) {
+      throw new Error("ข้อมูลผู้เข้าสอบไม่ครบถ้วน กรุณาติดต่อเจ้าหน้าที่");
+    }
+    GGNApp.pendingIdentity = profile;
+    setText("selected-examinee-name", profile.fullName || `${profile.firstName} ${profile.lastName}`);
+    setText("selected-examinee-code", profile.employeeCode || "-");
+    setText("selected-examinee-cohort", profile.cohortName || profile.cohortCode || profile.cohortId || "-");
+    showElement("examinee-information");
+    if (button) {
+      button.disabled = false;
+      button.textContent = "ยืนยันข้อมูลและเข้าสู่ระบบ";
+    }
+  } catch (error) {
+    GGNApp.pendingIdentity = null;
+    showNationalIdError(getErrorMessage(error));
+  } finally {
+    hideLoading();
+    if (button) {
+      button.disabled = false;
+      if (!GGNApp.pendingIdentity) button.textContent = "ตรวจสอบเลขบัตรประชาชน";
+    }
+  }
+}
 
-  saveExamineeToStorage(examinee);
-
-  await loadExamineeDashboard();
+async function confirmExamineeIdentity(nationalId) {
+  const button = $("btn-enter-system");
+  setButtonLoading("btn-enter-system", true, "กำลังยืนยันตัวตน...");
+  showLoading("กำลังสร้าง Session ผู้เข้าสอบ");
+  try {
+    const response = await GGNApi.request(
+      "identity.login",
+      { nationalId },
+      { retry: false }
+    );
+    const data = getResponseData(response) || {};
+    if (!data.sessionToken || !data.examinee) {
+      throw new Error("ระบบไม่ได้รับ Session ผู้เข้าสอบ กรุณาลองใหม่");
+    }
+    GGNApp.sessionToken = data.sessionToken;
+    GGNApp.examinee = Object.assign({}, GGNApp.pendingIdentity || {}, data.examinee);
+    GGNApp.pendingIdentity = null;
+    const nationalIdInput = $("examinee-national-id");
+    if (nationalIdInput) nationalIdInput.value = "";
+    hideElement("examinee-information");
+    await loadExamineeDashboard();
+  } catch (error) {
+    GGNApp.sessionToken = null;
+    GGNApp.examinee = null;
+    showNationalIdError(getErrorMessage(error));
+  } finally {
+    hideLoading();
+    if (button) {
+      button.disabled = false;
+      button.textContent = "ตรวจสอบเลขบัตรประชาชน";
+    }
+  }
 }
 
 
 /* ======================================================
-   12. EXAMINEE DASHBOARD
+   10. EXAMINEE DASHBOARD
    ====================================================== */
 
 async function loadExamineeDashboard() {
-  if (!GGNApp.examinee) {
+  if (!GGNApp.sessionToken || !GGNApp.examinee) {
     showSection("selection-section");
     return;
   }
 
   showLoading("กำลังโหลดข้อมูลการสอบ");
-
   try {
-
     const response = await GGNApi.request(
       "exam.dashboard",
-      {
-        examineeId: GGNApp.examinee.examineeId
-      },
-      {
-        retry: false
-      }
+      { sessionToken: GGNApp.sessionToken },
+      { retry: false }
     );
-
     const data = getResponseData(response) || {};
-
-    GGNApp.subjects = getResponseArray(
-      response,
-      [
-        "subjects",
-        "items"
-      ]
-    );
-
+    if (data.examinee) GGNApp.examinee = Object.assign({}, GGNApp.examinee, data.examinee);
+    GGNApp.subjects = Array.isArray(data.subjects) ? data.subjects : [];
     renderExamineeProfile();
-
     renderSubjectList(GGNApp.subjects);
-
     renderDashboardStatistics(GGNApp.subjects);
-
     showSection("examinee-dashboard");
-
-    setConnectionStatus(
-      "online",
-      "เชื่อมต่อระบบแล้ว"
-    );
-
+    setConnectionStatus("online", "เชื่อมต่อระบบแล้ว");
   } catch (error) {
-
-    console.error(
-      "[GGN TEST] Dashboard error:",
-      error
-    );
-
-    showSystemError(
-      getErrorMessage(error)
-    );
-
+    console.error("[GGN TEST] Dashboard error:", error);
+    if (String(error.code || "").includes("SESSION")) {
+      GGNApp.sessionToken = null;
+      GGNApp.examinee = null;
+      resetIdentityForm();
+      showSection("selection-section");
+      showAlert("Session หมดอายุ กรุณายืนยันตัวตนใหม่", "warning");
+    } else {
+      showSystemError(getErrorMessage(error));
+    }
   } finally {
     hideLoading();
   }
@@ -621,26 +462,10 @@ async function loadExamineeDashboard() {
 
 function renderExamineeProfile() {
   const examinee = GGNApp.examinee;
-
   if (!examinee) return;
-
-  setText(
-    "dashboard-examinee-name",
-    examinee.fullName
-  );
-
-  setText(
-    "dashboard-examinee-code",
-    examinee.employeeCode || "-"
-  );
-
-  setText(
-    "dashboard-examinee-cohort",
-    examinee.cohortName ||
-    examinee.cohortCode ||
-    examinee.cohortId ||
-    "-"
-  );
+  setText("dashboard-examinee-name", examinee.fullName || `${examinee.firstName || ""} ${examinee.lastName || ""}`.trim());
+  setText("dashboard-examinee-code", examinee.employeeCode || "-");
+  setText("dashboard-examinee-cohort", examinee.cohortName || examinee.cohortCode || examinee.cohortId || "-");
 }
 
 
@@ -1019,7 +844,7 @@ async function startSelectedExam() {
     const response = await GGNApi.request(
       "exam.start",
       {
-        examineeId: examinee.examineeId,
+        sessionToken: GGNApp.sessionToken,
         subjectId: subject.subjectId
       },
       {
@@ -1508,6 +1333,7 @@ async function saveExamAnswer(
   return GGNApi.request(
     "exam.saveAnswer",
     {
+      sessionToken: GGNApp.sessionToken,
       attemptId: session.attemptId,
       questionId,
       selectedAnswer
@@ -1750,6 +1576,7 @@ async function submitCurrentExam(isTimeExpired = false) {
     const response = await GGNApi.request(
       "exam.submit",
       {
+        sessionToken: GGNApp.sessionToken,
         attemptId: GGNApp.session.attemptId
       },
       {
@@ -1911,19 +1738,11 @@ function changeExaminee() {
   }
 
   GGNApp.examinee = null;
-
+  GGNApp.pendingIdentity = null;
+  GGNApp.sessionToken = null;
   GGNApp.subjects = [];
-
-  clearSavedExaminee();
-
-  const select = $("examinee-select");
-
-  if (select) {
-    select.value = "";
-  }
-
-  hideElement("examinee-information");
-
+  GGNApp.session = null;
+  resetIdentityForm();
   showSection("selection-section");
 }
 
@@ -1975,11 +1794,8 @@ function clearSavedExamSession() {
 
 function setupGGNEventListeners() {
 
-  $("examinee-select")
-    ?.addEventListener(
-      "change",
-      handleExamineeSelection
-    );
+  $("examinee-national-id")
+    ?.addEventListener("input", handleNationalIdInput);
 
 
   $("examinee-selection-form")

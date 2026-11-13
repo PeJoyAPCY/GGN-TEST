@@ -207,6 +207,7 @@ function isGGNRetrySafeAction(action) {
   const safeActions = [
 
     "system.ping",
+    "exam.dashboard",
 
     "admin.dashboard",
     "admin.subjects",
