@@ -86,13 +86,19 @@ function adminText(id, value) {
 }
 
 
+
 function adminShow(id, visible = true) {
     const element = adminElement(id);
 
     if (element) {
+        // ปรับ HTML hidden property
         element.hidden = !visible;
+
+        // ปรับ CSS hidden class ให้ตรงกัน
+        element.classList.toggle("hidden", !visible);
     }
 }
+
 
 
 function adminSetLoading(id, visible) {
