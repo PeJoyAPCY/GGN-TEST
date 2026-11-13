@@ -712,7 +712,9 @@ function populateQuestionFilters() {
 
         const defaultOption = document.createElement("option");
         defaultOption.value = "";
-        defaultOption.textContent = "ทุกวิชา";
+        defaultOption.textContent = select === questionSubject
+            ? "เลือกรายวิชา"
+            : "ทุกวิชา";
 
         select.appendChild(defaultOption);
 
@@ -769,13 +771,11 @@ function updateQuestionExamSetOptions() {
 
     if (!subjectSelect || !examSetSelect) return;
 
-    const subjectId = subjectSelect.value;
+    const subjectId = String(subjectSelect.value || "").trim();
 
     const filtered = GGNAdmin.examSets.filter(item => {
-        return (
-            !subjectId ||
-            String(item.subjectId) === String(subjectId)
-        );
+        return subjectId &&
+            String(item.subjectId || "").trim() === subjectId;
     });
 
     const previousValue = examSetSelect.value;
@@ -784,9 +784,17 @@ function updateQuestionExamSetOptions() {
 
     const defaultOption = document.createElement("option");
     defaultOption.value = "";
-    defaultOption.textContent = "เลือกชุดข้อสอบ";
+    defaultOption.textContent = !subjectId
+        ? "เลือกรายวิชาก่อน"
+        : filtered.length
+            ? "เลือกชุดข้อสอบ"
+            : "วิชานี้ยังไม่มีชุดข้อสอบ";
 
     examSetSelect.appendChild(defaultOption);
+
+    // The select is disabled in admin.html by default.
+    // Enable it only after a subject with at least one ExamSet is selected.
+    examSetSelect.disabled = !subjectId || filtered.length === 0;
 
     filtered.forEach(examSet => {
         const option = document.createElement("option");
