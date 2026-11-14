@@ -472,53 +472,56 @@ function renderExamineeProfile() {
    ====================================================== */
 
 function getSubjectStatus(subject) {
-  subject = subject || {};
+  const status =
+    String(
+      subject.attemptStatus ||
+      subject.examStatus ||
+      subject.status ||
+      ""
+    ).toUpperCase();
 
-  const status = String(
-    subject.status || subject.attemptStatus || ""
-  ).toUpperCase();
+  if (
+    status === "IN_PROGRESS" ||
+    status === "INPROGRESS"
+  ) {
+    return "IN_PROGRESS";
+  }
 
-  const resultStatus = String(
-    subject.resultStatus || ""
-  ).toUpperCase();
-
-  // สอบแล้ว ไม่เปิดเผยผลผ่าน/ไม่ผ่านแก่ผู้เข้าสอบ
   if (
     status === "SUBMITTED" ||
-    status === "COMPLETED" ||
-    status === "PASSED" ||
-    status === "FAILED" ||
-    resultStatus === "PASS" ||
-    resultStatus === "FAIL"
+    status === "COMPLETED"
   ) {
-    return {
-      key: "SUBMITTED",
-      text: "ส่งข้อสอบแล้ว",
-      className: "status-submitted"
-    };
+    return "SUBMITTED";
   }
 
-  if (status === "IN_PROGRESS") {
-    return {
-      key: "IN_PROGRESS",
-      text: "กำลังทำข้อสอบ",
-      className: "status-in-progress"
-    };
+  if (
+    status === "TIME_EXPIRED" ||
+    status === "EXPIRED"
+  ) {
+    return "TIME_EXPIRED";
   }
 
-  if (status === "TIME_EXPIRED") {
-    return {
-      key: "SUBMITTED",
-      text: "ส่งข้อสอบแล้ว",
-      className: "status-submitted"
-    };
+  if (
+    status === "PASSED" ||
+    subject.resultStatus === "PASS"
+  ) {
+    return "PASSED";
   }
 
-  return {
-    key: "AVAILABLE",
-    text: "พร้อมสอบ",
-    className: "status-available"
-  };
+  if (
+    status === "FAILED" ||
+    subject.resultStatus === "FAIL"
+  ) {
+    return "FAILED";
+  }
+
+  const examStatus = String(subject.examStatus || "").toUpperCase();
+  if (examStatus === "NOT_YET_OPEN") return "NOT_YET_OPEN";
+  if (examStatus === "CLOSED") return "CLOSED";
+  if (examStatus === "CONFIGURATION_ERROR") return "CONFIGURATION_ERROR";
+  if (examStatus === "NOT_AVAILABLE" || !examStatus) return "NOT_AVAILABLE";
+
+  return "PENDING";
 }
 
 function getSubjectStatusDisplay(subject) {
@@ -605,78 +608,145 @@ function getSubjectStatusDisplay(subject) {
    ====================================================== */
 
 function renderSubjectList(subjects) {
-  const container = document.getElementById("subject-list");
+  const container = $("subject-list");
 
-  if (!container) {
-    console.error("ไม่พบ element: subject-list");
-    return;
-  }
+  if (!container) return;
 
   container.innerHTML = "";
 
-  subjects = Array.isArray(subjects) ? subjects : [];
+  hideElement("subject-list-loading");
+  const openCount = (Array.isArray(subjects) ? subjects : []).filter(subject =>
+    subject.examStatus === "AVAILABLE" ||
+    (subject.attemptStatus === "IN_PROGRESS" && subject.examStatus === "ATTEMPT_EXISTS")
+  ).length;
+  setText("subject-open-count", `${openCount} วิชาเปิดสอบ`);
 
-  if (subjects.length === 0) {
-    container.innerHTML = `
-      <div class="empty-state">
-        ยังไม่มีวิชาที่เปิดสอบในขณะนี้
-      </div>
-    `;
+  if (!subjects || subjects.length === 0) {
+    showElement("subject-list-empty");
     return;
   }
 
-  subjects.forEach((subject) => {
-    const status = getSubjectStatus(subject);
+  hideElement("subject-list-empty");
 
-    const card = document.createElement("div");
-    card.className = "subject-card";
+  subjects
+    .slice()
+    .sort((a, b) => {
+      return Number(a.displayOrder || 0) -
+        Number(b.displayOrder || 0);
+    })
+    .forEach((subject, index) => {
 
-    const title = document.createElement("h3");
-    title.textContent =
-      subject.subjectName ||
-      subject.name ||
-      "ไม่ระบุชื่อวิชา";
+      const status =
+        getSubjectStatusDisplay(subject);
 
-    const statusText = document.createElement("span");
-    statusText.className =
-      `subject-status ${status.className}`;
-    statusText.textContent = status.text;
+      const card = document.createElement("div");
 
-    const resultText = document.createElement("span");
-    resultText.className = "text-secondary";
+      card.className = "card mb-3";
 
-    resultText.textContent =
-      status.key === "SUBMITTED"
-        ? "ส่งข้อสอบเรียบร้อยแล้ว"
-        : status.key === "IN_PROGRESS"
-          ? "คุณมีข้อสอบที่กำลังทำอยู่"
-          : "เลือกเริ่มสอบเมื่อพร้อม";
+      const title =
+        subject.subjectName ||
+        subject.name ||
+        `วิชาที่ ${index + 1}`;
 
-    card.appendChild(title);
-    card.appendChild(statusText);
-    card.appendChild(resultText);
+      const description =
+        subject.description || "";
 
-    // แสดงปุ่มตามสถานะเดิมของระบบ
-    if (status.key !== "SUBMITTED") {
+      const questionCount =
+        subject.totalQuestions ??
+        subject.questionCount ??
+        "-";
+
+      const duration =
+        subject.durationMinutes ??
+        "-";
+
       const button = document.createElement("button");
+
       button.type = "button";
-      button.textContent =
-        status.key === "IN_PROGRESS"
-          ? "ทำข้อสอบต่อ"
-          : "เริ่มสอบ";
+      button.className =
+        status.disabled
+          ? "btn btn-secondary"
+          : "btn btn-primary";
 
-      button.addEventListener("click", () => {
-        if (typeof startSelectedExam === "function") {
-          startSelectedExam(subject);
-        }
-      });
+      button.textContent = status.button;
+      button.disabled = status.disabled;
 
-      card.appendChild(button);
-    }
+      if (!status.disabled) {
+        button.addEventListener("click", () => {
+          openExamInstructions(subject);
+        });
+      }
 
-    container.appendChild(card);
-  });
+      const header = document.createElement("div");
+      header.className = "card-header";
+
+      const titleElement = document.createElement("div");
+      titleElement.className = "card-title";
+      titleElement.textContent = title;
+
+      const badge = document.createElement("span");
+      badge.className = `badge ${status.badge}`;
+      badge.textContent = status.text;
+
+      header.appendChild(titleElement);
+      header.appendChild(badge);
+
+      const descriptionElement =
+        document.createElement("p");
+
+      descriptionElement.textContent = description;
+
+      const information =
+        document.createElement("div");
+
+      information.className =
+        "flex flex-wrap gap-3 mt-3 mb-3";
+
+      information.innerHTML = `
+        <span class="text-secondary">
+          จำนวนข้อ: ${escapeHtml(questionCount)}
+        </span>
+
+        <span class="text-secondary">
+          เวลาสอบ: ${escapeHtml(duration)} นาที
+        </span>
+      `;
+
+      const footer = document.createElement("div");
+      footer.className = "card-footer flex-between flex-wrap gap-3";
+
+      const resultText =
+        document.createElement("span");
+
+      resultText.className = "text-secondary";
+
+      if (
+        subject.score !== undefined &&
+        subject.score !== null
+      ) {
+        resultText.textContent =
+          `คะแนน: ${subject.score}`;
+      } else {
+        resultText.textContent =
+          "เลือกเริ่มสอบเมื่อพร้อม";
+      }
+
+      footer.appendChild(resultText);
+      footer.appendChild(button);
+
+      card.appendChild(header);
+
+      if (description) {
+        card.appendChild(descriptionElement);
+      }
+
+      card.appendChild(information);
+      card.appendChild(footer);
+
+      container.appendChild(card);
+    });
 }
+
 
 /* ======================================================
    15. DASHBOARD STATISTICS
@@ -836,6 +906,7 @@ async function startSelectedExam() {
         "ข้อมูลข้อสอบจาก Backend ไม่ครบถ้วน"
       );
     }
+
 
     GGNApp.session = session;
 
