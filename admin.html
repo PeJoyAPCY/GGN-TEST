@@ -87,7 +87,7 @@
       <div class="card mt-4">
         <div class="text-secondary">ระบบ</div>
         <strong>GGN TEST</strong>
-        <div class="text-muted">Version 2.0.0</div>
+        <div class="text-muted">Version 2.0.2</div>
       </div>
     </aside>
 
@@ -238,7 +238,7 @@
               <div class="card-title">คลังข้อสอบรายวิชา</div>
               <span id="question-subject-context" class="badge badge-primary">ยังไม่ได้เลือกรายวิชา</span>
             </div>
-            <p class="text-muted">หนึ่งรายวิชามีข้อสอบหนึ่งชุด ระบบจะผูกข้อสอบเข้ากับชุดของรายวิชาให้อัตโนมัติ</p>
+            <p class="text-muted">รายการนี้รวมข้อสอบของรายวิชาที่เลือกจากทุกชุดสอบและรุ่น โดยแสดงชุดสอบกำกับในแต่ละข้อ</p>
           </div>
 
           <div class="card mb-4 hidden" aria-hidden="true">
@@ -327,7 +327,8 @@
                   <tr>
                     <th width="65">ข้อ</th>
                     <th>คำถามและตัวเลือก A–D</th>
-                        <th width="80">คะแนน</th>
+                    <th>ชุดสอบ / รุ่น</th>
+                    <th width="80">คะแนน</th>
                     <th width="90">เฉลย</th>
                     <th width="100">สถานะ</th>
                     <th width="130">จัดการ</th>
@@ -717,6 +718,16 @@
             </select>
           </div>
 
+          <!-- ระบบผูกชุดข้อสอบจากรายวิชาให้อัตโนมัติ -->
+          <input type="hidden"
+                 id="question-examset"
+                 name="examSetId"
+                 value="">
+
+          <div class="form-hint mb-3">
+            ระบบจะผูกข้อสอบเข้ากับชุดข้อสอบของรายวิชาที่เลือกให้อัตโนมัติ
+          </div>
+
           <div class="form-row">
 
             <div class="form-group">
@@ -1014,7 +1025,7 @@
 
   <!-- SCRIPTS -->
   <script src="js/api.js"></script>
-  <script src="js/admin.js"></script>
+  <script src="js/admin.js?v=2.0.2"></script>
 
 </body>
 </html>
