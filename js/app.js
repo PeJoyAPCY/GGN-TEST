@@ -515,6 +515,12 @@ function getSubjectStatus(subject) {
     return "FAILED";
   }
 
+  const examStatus = String(subject.examStatus || "").toUpperCase();
+  if (examStatus === "NOT_YET_OPEN") return "NOT_YET_OPEN";
+  if (examStatus === "CLOSED") return "CLOSED";
+  if (examStatus === "CONFIGURATION_ERROR") return "CONFIGURATION_ERROR";
+  if (examStatus === "NOT_AVAILABLE" || !examStatus) return "NOT_AVAILABLE";
+
   return "PENDING";
 }
 
@@ -562,6 +568,34 @@ function getSubjectStatusDisplay(subject) {
       badge: "badge-danger",
       button: "สอบแล้ว",
       disabled: true
+    },
+
+    NOT_YET_OPEN: {
+      text: "ยังไม่ถึงเวลาเปิดสอบ",
+      badge: "badge-secondary",
+      button: "ยังไม่เปิดสอบ",
+      disabled: true
+    },
+
+    CLOSED: {
+      text: "ปิดสอบแล้ว",
+      badge: "badge-secondary",
+      button: "ปิดสอบแล้ว",
+      disabled: true
+    },
+
+    NOT_AVAILABLE: {
+      text: "ยังไม่มีชุดข้อสอบ",
+      badge: "badge-secondary",
+      button: "ยังไม่พร้อมสอบ",
+      disabled: true
+    },
+
+    CONFIGURATION_ERROR: {
+      text: "โปรดติดต่อเจ้าหน้าที่",
+      badge: "badge-danger",
+      button: "ไม่พร้อมสอบ",
+      disabled: true
     }
   };
 
@@ -581,7 +615,11 @@ function renderSubjectList(subjects) {
   container.innerHTML = "";
 
   hideElement("subject-list-loading");
-  setText("subject-open-count", `${Array.isArray(subjects) ? subjects.length : 0} วิชา`);
+  const openCount = (Array.isArray(subjects) ? subjects : []).filter(subject =>
+    subject.examStatus === "AVAILABLE" ||
+    (subject.attemptStatus === "IN_PROGRESS" && subject.examStatus === "ATTEMPT_EXISTS")
+  ).length;
+  setText("subject-open-count", `${openCount} วิชาเปิดสอบ`);
 
   if (!subjects || subjects.length === 0) {
     showElement("subject-list-empty");
@@ -768,6 +806,12 @@ function openExamInstructions(subject) {
       "danger"
     );
 
+    return;
+  }
+
+  const canResume = subject.attemptStatus === "IN_PROGRESS";
+  if (subject.examStatus !== "AVAILABLE" && !canResume) {
+    showAlert("วิชานี้ยังไม่เปิดให้เข้าสอบ กรุณาเลือกวิชาที่มีสถานะเปิดสอบ", "warning");
     return;
   }
 
