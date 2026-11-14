@@ -472,56 +472,53 @@ function renderExamineeProfile() {
    ====================================================== */
 
 function getSubjectStatus(subject) {
-  const status =
-    String(
-      subject.attemptStatus ||
-      subject.examStatus ||
-      subject.status ||
-      ""
-    ).toUpperCase();
+  subject = subject || {};
 
-  if (
-    status === "IN_PROGRESS" ||
-    status === "INPROGRESS"
-  ) {
-    return "IN_PROGRESS";
-  }
+  const status = String(
+    subject.status || subject.attemptStatus || ""
+  ).toUpperCase();
 
+  const resultStatus = String(
+    subject.resultStatus || ""
+  ).toUpperCase();
+
+  // สอบแล้ว ไม่เปิดเผยผลผ่าน/ไม่ผ่านแก่ผู้เข้าสอบ
   if (
     status === "SUBMITTED" ||
-    status === "COMPLETED"
-  ) {
-    return "SUBMITTED";
-  }
-
-  if (
-    status === "TIME_EXPIRED" ||
-    status === "EXPIRED"
-  ) {
-    return "TIME_EXPIRED";
-  }
-
-  if (
+    status === "COMPLETED" ||
     status === "PASSED" ||
-    subject.resultStatus === "PASS"
-  ) {
-    return "PASSED";
-  }
-
-  if (
     status === "FAILED" ||
-    subject.resultStatus === "FAIL"
+    resultStatus === "PASS" ||
+    resultStatus === "FAIL"
   ) {
-    return "FAILED";
+    return {
+      key: "SUBMITTED",
+      text: "ส่งข้อสอบแล้ว",
+      className: "status-submitted"
+    };
   }
 
-  const examStatus = String(subject.examStatus || "").toUpperCase();
-  if (examStatus === "NOT_YET_OPEN") return "NOT_YET_OPEN";
-  if (examStatus === "CLOSED") return "CLOSED";
-  if (examStatus === "CONFIGURATION_ERROR") return "CONFIGURATION_ERROR";
-  if (examStatus === "NOT_AVAILABLE" || !examStatus) return "NOT_AVAILABLE";
+  if (status === "IN_PROGRESS") {
+    return {
+      key: "IN_PROGRESS",
+      text: "กำลังทำข้อสอบ",
+      className: "status-in-progress"
+    };
+  }
 
-  return "PENDING";
+  if (status === "TIME_EXPIRED") {
+    return {
+      key: "SUBMITTED",
+      text: "ส่งข้อสอบแล้ว",
+      className: "status-submitted"
+    };
+  }
+
+  return {
+    key: "AVAILABLE",
+    text: "พร้อมสอบ",
+    className: "status-available"
+  };
 }
 
 function getSubjectStatusDisplay(subject) {
@@ -608,145 +605,78 @@ function getSubjectStatusDisplay(subject) {
    ====================================================== */
 
 function renderSubjectList(subjects) {
-  const container = $("subject-list");
+  const container = document.getElementById("subject-list");
 
-  if (!container) return;
-
-  container.innerHTML = "";
-
-  hideElement("subject-list-loading");
-  const openCount = (Array.isArray(subjects) ? subjects : []).filter(subject =>
-    subject.examStatus === "AVAILABLE" ||
-    (subject.attemptStatus === "IN_PROGRESS" && subject.examStatus === "ATTEMPT_EXISTS")
-  ).length;
-  setText("subject-open-count", `${openCount} วิชาเปิดสอบ`);
-
-  if (!subjects || subjects.length === 0) {
-    showElement("subject-list-empty");
+  if (!container) {
+    console.error("ไม่พบ element: subject-list");
     return;
   }
 
-  hideElement("subject-list-empty");
+  container.innerHTML = "";
 
-  subjects
-    .slice()
-    .sort((a, b) => {
-      return Number(a.displayOrder || 0) -
-        Number(b.displayOrder || 0);
-    })
-    .forEach((subject, index) => {
+  subjects = Array.isArray(subjects) ? subjects : [];
 
-      const status =
-        getSubjectStatusDisplay(subject);
+  if (subjects.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        ยังไม่มีวิชาที่เปิดสอบในขณะนี้
+      </div>
+    `;
+    return;
+  }
 
-      const card = document.createElement("div");
+  subjects.forEach((subject) => {
+    const status = getSubjectStatus(subject);
 
-      card.className = "card mb-3";
+    const card = document.createElement("div");
+    card.className = "subject-card";
 
-      const title =
-        subject.subjectName ||
-        subject.name ||
-        `วิชาที่ ${index + 1}`;
+    const title = document.createElement("h3");
+    title.textContent =
+      subject.subjectName ||
+      subject.name ||
+      "ไม่ระบุชื่อวิชา";
 
-      const description =
-        subject.description || "";
+    const statusText = document.createElement("span");
+    statusText.className =
+      `subject-status ${status.className}`;
+    statusText.textContent = status.text;
 
-      const questionCount =
-        subject.totalQuestions ??
-        subject.questionCount ??
-        "-";
+    const resultText = document.createElement("span");
+    resultText.className = "text-secondary";
 
-      const duration =
-        subject.durationMinutes ??
-        "-";
+    resultText.textContent =
+      status.key === "SUBMITTED"
+        ? "ส่งข้อสอบเรียบร้อยแล้ว"
+        : status.key === "IN_PROGRESS"
+          ? "คุณมีข้อสอบที่กำลังทำอยู่"
+          : "เลือกเริ่มสอบเมื่อพร้อม";
 
+    card.appendChild(title);
+    card.appendChild(statusText);
+    card.appendChild(resultText);
+
+    // แสดงปุ่มตามสถานะเดิมของระบบ
+    if (status.key !== "SUBMITTED") {
       const button = document.createElement("button");
-
       button.type = "button";
-      button.className =
-        status.disabled
-          ? "btn btn-secondary"
-          : "btn btn-primary";
+      button.textContent =
+        status.key === "IN_PROGRESS"
+          ? "ทำข้อสอบต่อ"
+          : "เริ่มสอบ";
 
-      button.textContent = status.button;
-      button.disabled = status.disabled;
+      button.addEventListener("click", () => {
+        if (typeof startSelectedExam === "function") {
+          startSelectedExam(subject);
+        }
+      });
 
-      if (!status.disabled) {
-        button.addEventListener("click", () => {
-          openExamInstructions(subject);
-        });
-      }
+      card.appendChild(button);
+    }
 
-      const header = document.createElement("div");
-      header.className = "card-header";
-
-      const titleElement = document.createElement("div");
-      titleElement.className = "card-title";
-      titleElement.textContent = title;
-
-      const badge = document.createElement("span");
-      badge.className = `badge ${status.badge}`;
-      badge.textContent = status.text;
-
-      header.appendChild(titleElement);
-      header.appendChild(badge);
-
-      const descriptionElement =
-        document.createElement("p");
-
-      descriptionElement.textContent = description;
-
-      const information =
-        document.createElement("div");
-
-      information.className =
-        "flex flex-wrap gap-3 mt-3 mb-3";
-
-      information.innerHTML = `
-        <span class="text-secondary">
-          จำนวนข้อ: ${escapeHtml(questionCount)}
-        </span>
-
-        <span class="text-secondary">
-          เวลาสอบ: ${escapeHtml(duration)} นาที
-        </span>
-      `;
-
-      const footer = document.createElement("div");
-      footer.className = "card-footer flex-between flex-wrap gap-3";
-
-      const resultText =
-        document.createElement("span");
-
-      resultText.className = "text-secondary";
-
-      if (
-        subject.score !== undefined &&
-        subject.score !== null
-      ) {
-        resultText.textContent =
-          `คะแนน: ${subject.score}`;
-      } else {
-        resultText.textContent =
-          "เลือกเริ่มสอบเมื่อพร้อม";
-      }
-
-      footer.appendChild(resultText);
-      footer.appendChild(button);
-
-      card.appendChild(header);
-
-      if (description) {
-        card.appendChild(descriptionElement);
-      }
-
-      card.appendChild(information);
-      card.appendChild(footer);
-
-      container.appendChild(card);
-    });
+    container.appendChild(card);
+  });
 }
-
 
 /* ======================================================
    15. DASHBOARD STATISTICS
@@ -1659,81 +1589,44 @@ async function submitCurrentExam(isTimeExpired = false) {
 
 /* ======================================================
    28. RENDER EXAM RESULT
+   Examinee: Confirmation only, no score display
    ====================================================== */
 
 function renderExamResult(result) {
-  const session = GGNApp.session;
 
-  setText(
-    "result-subject-name",
-    result.subjectName ||
-    session?.subjectName ||
-    GGNApp.selectedSubject?.subjectName ||
-    "-"
-  );
+  const section = $("exam-result-section");
 
-  const score =
-    result.score ?? "-";
+  if (!section) return;
 
-  const maxScore =
-    result.maxScore ?? "";
+  // Preserve the existing dashboard button and its event listener.
+  const backButton = $("btn-back-to-dashboard");
 
-  setText(
-    "result-score",
-    maxScore !== ""
-      ? `${score} / ${maxScore}`
-      : score
-  );
-
-  const resultStatus =
-    String(
-      result.resultStatus ||
-      result.passStatus ||
-      ""
-    ).toUpperCase();
-
-  const statusElement =
-    $("result-status");
-
-  if (statusElement) {
-
-    if (resultStatus === "PASS") {
-      statusElement.textContent = "ผ่าน";
-      statusElement.className =
-        "result-status pass";
-
-    } else if (resultStatus === "FAIL") {
-      statusElement.textContent = "ไม่ผ่าน";
-      statusElement.className =
-        "result-status fail";
-
-    } else {
-      statusElement.textContent =
-        result.status === "TIME_EXPIRED"
-          ? "หมดเวลาสอบ"
-          : "ส่งข้อสอบแล้ว";
-
-      statusElement.className =
-        "result-status";
-    }
+  if (backButton) {
+    backButton.remove();
   }
 
-  setText(
-    "result-total-questions",
-    result.totalQuestions ??
-    session?.questions?.length ??
-    "-"
-  );
+  // Remove all score and result details from the result screen.
+  section.innerHTML = "";
 
-  setText(
-    "result-correct-count",
-    result.correctCount ?? "-"
-  );
+  const wrapper = document.createElement("div");
+  wrapper.className = "card text-center";
 
-  setText(
-    "result-exam-status",
-    result.status || "SUBMITTED"
-  );
+  const title = document.createElement("h2");
+  title.textContent = "ส่งข้อสอบเรียบร้อยแล้ว";
+
+  const message = document.createElement("p");
+  message.textContent = "ระบบบันทึกการส่งข้อสอบของคุณแล้ว";
+
+  wrapper.appendChild(title);
+  wrapper.appendChild(message);
+
+  section.appendChild(wrapper);
+
+  // Restore the existing button.
+  if (backButton) {
+    section.appendChild(backButton);
+  }
+
 }
 
 
