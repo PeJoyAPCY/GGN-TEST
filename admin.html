@@ -87,7 +87,7 @@
       <div class="card mt-4">
         <div class="text-secondary">ระบบ</div>
         <strong>GGN TEST</strong>
-        <div class="text-muted">Version 2.0.3</div>
+        <div class="text-muted">Version 2.0.2</div>
       </div>
     </aside>
 
@@ -624,10 +624,6 @@
             <input type="text" id="subject-add-name" name="subjectName" class="form-control" maxlength="150" required>
           </div>
           <div class="form-group">
-            <label for="subject-add-description" class="form-label">คำอธิบาย</label>
-            <textarea id="subject-add-description" name="description" class="form-control" rows="3"></textarea>
-          </div>
-          <div class="form-group">
             <label for="subject-add-order" class="form-label">ลำดับการแสดงผล</label>
             <input type="number" id="subject-add-order" name="displayOrder" class="form-control" min="1" step="1">
           </div>
@@ -663,7 +659,7 @@
             </select>
           </div>
           <div class="alert alert-warning">
-            ระบบจะตรวจสอบชุดสอบ ข้อสอบ และประวัติการสอบก่อนดำเนินการ หากมีข้อมูลอ้างอิงหรือประวัติสอบ ระบบจะปิดใช้งานแทนการลบจริง เพื่อรักษาข้อมูลย้อนหลัง
+            หากวิชานี้ยังไม่มีประวัติการสอบ ระบบจะลบชุดสอบและข้อสอบที่ผูกอยู่ด้วย หากมีประวัติการสอบหรือคะแนน ระบบจะปิดใช้งานแทนการลบเพื่อรักษาข้อมูลย้อนหลัง
           </div>
           <div id="subject-delete-form-error" class="alert alert-danger hidden" role="alert"></div>
         </div>
@@ -720,17 +716,16 @@
 
           <div class="form-group">
             <label for="question-examset" class="form-label">
-              ชุดข้อสอบ <span class="required">*</span>
+              ชุดข้อสอบ / รุ่น <span class="required">*</span>
             </label>
             <select id="question-examset"
                     name="examSetId"
                     class="form-control"
-                    required
-                    disabled>
+                    required>
               <option value="">เลือกรายวิชาก่อน</option>
             </select>
             <div class="form-hint">
-              ระบบจะแสดงเฉพาะชุดข้อสอบของรายวิชาที่เลือก หากมีหลายชุดต้องเลือกชุดที่ต้องการก่อนบันทึก
+              หากวิชามีหลายรุ่น ให้เลือกชุดข้อสอบของรุ่นที่ต้องการเพิ่มหรือแก้ไข
             </div>
           </div>
 
@@ -1031,7 +1026,7 @@
 
   <!-- SCRIPTS -->
   <script src="js/api.js"></script>
-  <script src="js/admin.js?v=2.0.3"></script>
+  <script src="js/admin.js?v=3.2.0"></script>
 
 </body>
 </html>
