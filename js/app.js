@@ -907,16 +907,6 @@ async function startSelectedExam() {
       );
     }
 
-    if (
-      !Number.isFinite(
-        Number(session.remainingSeconds)
-      )
-    ) {
-      throw new Error(
-        "Backend ไม่ได้ส่งเวลาสอบที่เหลือมา"
-      );
-    }
-
     GGNApp.session = session;
 
     GGNApp.currentQuestionIndex = 0;
@@ -944,13 +934,17 @@ async function startSelectedExam() {
 
     showSection("exam-section");
 
-    startExamTimer(
-      Number(session.remainingSeconds)
-    );
+    stopExamTimer();
+
+    const timerElement = document.getElementById("exam-timer");
+
+    if (timerElement) {
+      timerElement.textContent = "ตามรอบเวลาที่กำหนด";
+    }
 
     if (session.resumed) {
       showAlert(
-        "กลับเข้าสู่ข้อสอบเดิมแล้ว ระบบใช้เวลาที่เหลือจากการสอบครั้งก่อน",
+        "กลับเข้าสู่ข้อสอบเดิมแล้ว สามารถทำข้อสอบต่อได้",
         "info"
       );
     }
