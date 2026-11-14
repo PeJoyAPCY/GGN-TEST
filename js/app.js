@@ -1658,46 +1658,59 @@ async function submitCurrentExam(isTimeExpired = false) {
 }
 
 
+
 /* ======================================================
    28. RENDER EXAM RESULT
    Examinee: Confirmation only, no score display
    ====================================================== */
 
 function renderExamResult(result) {
+  // แสดงข้อความยืนยันการส่งข้อสอบเท่านั้น
+  // ไม่แก้ไขโครงสร้าง HTML หรือองค์ประกอบเดิมของหน้า
 
-  const section = $("exam-result-section");
+  setText(
+    "result-subject-name",
+    "ส่งข้อสอบเรียบร้อยแล้ว"
+  );
 
-  if (!section) return;
+  setText(
+    "result-score",
+    ""
+  );
 
-  // Preserve the existing dashboard button and its event listener.
-  const backButton = $("btn-back-to-dashboard");
+  setText(
+    "result-status",
+    "ระบบบันทึกการส่งข้อสอบของคุณแล้ว"
+  );
 
-  if (backButton) {
-    backButton.remove();
-  }
+  setText(
+    "result-total-questions",
+    ""
+  );
 
-  // Remove all score and result details from the result screen.
-  section.innerHTML = "";
+  setText(
+    "result-correct-count",
+    ""
+  );
 
-  const wrapper = document.createElement("div");
-  wrapper.className = "card text-center";
+  setText(
+    "result-exam-status",
+    ""
+  );
 
-  const title = document.createElement("h2");
-  title.textContent = "ส่งข้อสอบเรียบร้อยแล้ว";
-
-  const message = document.createElement("p");
-  message.textContent = "ระบบบันทึกการส่งข้อสอบของคุณแล้ว";
-
-  wrapper.appendChild(title);
-  wrapper.appendChild(message);
-
-  section.appendChild(wrapper);
-
-  // Restore the existing button.
-  if (backButton) {
-    section.appendChild(backButton);
-  }
-
+  // ซ่อนส่วนคะแนนและรายละเอียดผลสอบ
+  [
+    "result-score",
+    "result-total-questions",
+    "result-correct-count",
+    "result-exam-status"
+  ].forEach(id => {
+    const element = $(id);
+    if (element) {
+      element.textContent = "";
+      element.classList.add("hidden");
+    }
+  });
 }
 
 
