@@ -5,7 +5,7 @@
  * ======================================================
  *
  * File: js/admin.js
- * Version: 2.0.2
+ * Version: 2.1.0
  * Updated: 2026-11-14
  *
  * Changes:
@@ -20,6 +20,11 @@
  * - No Admin login or PIN on frontend
  * - Automatically resolve examSetId from selected subject
  * - Support hidden examSetId field in question form
+ * - Fix hidden-class rendering for question table and alerts
+ * - Add explicit DRAFT-to-PUBLISHED workflow
+ * - Toggle all published sets for a subject safely
+ * - Preserve subject context when resetting filters
+ * - Display live question count on dashboard
  *
  * Dependencies:
  * - js/api.js
@@ -92,7 +97,11 @@ function adminShow(id, visible = true) {
     const element = adminElement(id);
 
     if (element) {
+        // Keep the HTML hidden attribute and the project's .hidden CSS class
+        // synchronized. Toggling only element.hidden leaves .hidden in place,
+        // which keeps tables and empty states invisible even after loading.
         element.hidden = !visible;
+        element.classList.toggle("hidden", !visible);
     }
 }
 
@@ -412,10 +421,11 @@ async function loadAdminDashboard() {
                 adminText("admin-role", "ADMIN");
             }
 
-            const [subjectResponse, examSetResponse] =
+            const [subjectResponse, examSetResponse, questionResponse] =
                 await Promise.all([
                     adminRequest("admin.subjects"),
-                    adminRequest("admin.examSets")
+                    adminRequest("admin.examSets"),
+                    adminRequest("admin.questions", {})
                 ]);
 
             GGNAdmin.subjects = adminGetArray(
@@ -438,16 +448,20 @@ async function loadAdminDashboard() {
                 adminFormatNumber(GGNAdmin.examSets.length)
             );
 
+            const dashboardQuestionCount = adminGetArray(
+                questionResponse,
+                ["questions", "items"]
+            ).length;
+
             const totalQuestions =
                 dashboard.totalQuestions ??
                 dashboard.questionCount ??
-                dashboard.summary?.totalQuestions;
+                dashboard.summary?.totalQuestions ??
+                dashboardQuestionCount;
 
             adminText(
                 "stat-total-questions",
-                totalQuestions === undefined
-                    ? "-"
-                    : adminFormatNumber(totalQuestions)
+                adminFormatNumber(totalQuestions)
             );
 
             adminText("stat-system-status", "พร้อมใช้งาน");
@@ -510,10 +524,19 @@ function renderAdminDashboardSubjects() {
             item => String(item.subjectId) === subjectId
         );
 
-        const isOpen = subjectExamSets.length > 0 &&
-            subjectExamSets.every(item =>
-                adminNormalizeBoolean(item.isOpen)
-            );
+        const publishedSets = subjectExamSets.filter(
+            item => String(item.status || "").toUpperCase() === "PUBLISHED"
+        );
+        const draftSets = subjectExamSets.filter(
+            item => String(item.status || "").toUpperCase() === "DRAFT"
+        );
+        const allPublished =
+            subjectExamSets.length > 0 &&
+            publishedSets.length === subjectExamSets.length;
+        const hasDraft = draftSets.length > 0;
+        const isOpen = allPublished && publishedSets.every(item =>
+            adminNormalizeBoolean(item.isOpen)
+        );
 
         const inactive = Boolean(
             subject.status &&
@@ -549,7 +572,9 @@ function renderAdminDashboardSubjects() {
         status.className = `subject-status ${
             isOpen ? "is-open" : "is-closed"
         }`;
-        status.textContent = isOpen ? "เปิดสอบ" : "ปิดสอบ";
+        status.textContent = allPublished
+            ? (isOpen ? "เปิดสอบ" : "ปิดสอบ")
+            : (hasDraft ? "ฉบับร่าง" : "ยังไม่มีชุดสอบ");
 
         top.append(info, status);
 
@@ -564,7 +589,9 @@ function renderAdminDashboardSubjects() {
         const switchInput = document.createElement("input");
         switchInput.type = "checkbox";
         switchInput.checked = isOpen;
-        switchInput.disabled = inactive;
+        // The exam switch is available only after every set for this subject
+        // has been published. Publishing is a separate, explicit operation.
+        switchInput.disabled = inactive || !allPublished;
         switchInput.setAttribute(
             "aria-label",
             `เปลี่ยนสถานะการสอบ ${name.textContent}`
@@ -612,9 +639,39 @@ function renderAdminDashboardSubjects() {
                 );
 
             } finally {
-                switchInput.disabled = inactive;
+                switchInput.disabled = inactive || !allPublished;
             }
         });
+
+        // Publish DRAFT sets explicitly before allowing the exam switch.
+        if (hasDraft) {
+            const publishButton = document.createElement("button");
+            publishButton.type = "button";
+            publishButton.className = "subject-manage-btn";
+            publishButton.textContent = `เผยแพร่ชุดสอบ (${draftSets.length})`;
+            publishButton.disabled = inactive;
+            publishButton.addEventListener("click", async () => {
+                publishButton.disabled = true;
+                try {
+                    await adminRequest("admin.subject.examPublish", {
+                        subjectId
+                    });
+                    adminShowAlert(
+                        `เผยแพร่ชุดสอบ ${name.textContent} เรียบร้อยแล้ว`,
+                        "success"
+                    );
+                    await loadAdminDashboard();
+                } catch (error) {
+                    adminShowAlert(
+                        `เผยแพร่ชุดสอบไม่สำเร็จ: ${error.message}`,
+                        "error"
+                    );
+                } finally {
+                    publishButton.disabled = inactive;
+                }
+            });
+            actions.appendChild(publishButton);
+        }
 
         // Manage questions
         const manageButton = document.createElement("button");
@@ -661,7 +718,7 @@ async function setAdminSubjectExamStatus(subjectId, isOpen) {
     }
 
     return adminRequest(
-        "admin.subject.examStatus",
+        "admin.subject.examStatus.manage",
         {
             subjectId,
             isOpen: Boolean(isOpen)
@@ -2000,10 +2057,18 @@ function setupAdminEvents() {
 
     adminElement("btn-reset-question-filter")
         ?.addEventListener("click", () => {
-            adminElement("filter-subject").value = "";
-            adminElement("filter-examset").value = "";
-            adminElement("filter-question-status").value = "";
-            adminElement("question-search").value = "";
+            const subjectId = String(GGNAdmin.selectedSubjectId || "");
+            const subjectFilter = adminElement("filter-subject");
+            const examSetFilter = adminElement("filter-examset");
+            const statusFilter = adminElement("filter-question-status");
+            const keywordFilter = adminElement("question-search");
+
+            // This page is scoped to the subject selected on the dashboard.
+            // Reset optional filters without losing that subject context.
+            if (subjectFilter) subjectFilter.value = subjectId;
+            if (examSetFilter) examSetFilter.value = "";
+            if (statusFilter) statusFilter.value = "";
+            if (keywordFilter) keywordFilter.value = "";
 
             loadAdminQuestions();
         });
