@@ -365,7 +365,6 @@ async function handleEnterSystem(event) {
     }
     GGNApp.pendingIdentity = profile;
     setText("selected-examinee-name", profile.fullName || `${profile.firstName} ${profile.lastName}`);
-    setText("selected-examinee-code", profile.employeeCode || "-");
     setText("selected-examinee-cohort", profile.cohortName || profile.cohortCode || profile.cohortId || "-");
     showElement("examinee-information");
     if (button) {
@@ -464,7 +463,6 @@ function renderExamineeProfile() {
   const examinee = GGNApp.examinee;
   if (!examinee) return;
   setText("dashboard-examinee-name", examinee.fullName || `${examinee.firstName || ""} ${examinee.lastName || ""}`.trim());
-  setText("dashboard-examinee-code", examinee.employeeCode || "-");
   setText("dashboard-examinee-cohort", examinee.cohortName || examinee.cohortCode || examinee.cohortId || "-");
 }
 
@@ -583,6 +581,7 @@ function renderSubjectList(subjects) {
   container.innerHTML = "";
 
   hideElement("subject-list-loading");
+  setText("subject-open-count", `${Array.isArray(subjects) ? subjects.length : 0} วิชา`);
 
   if (!subjects || subjects.length === 0) {
     showElement("subject-list-empty");
