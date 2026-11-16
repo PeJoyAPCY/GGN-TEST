@@ -5,7 +5,7 @@
  * ======================================================
  *
  * File: js/admin.js
- * Version: 3.2.0
+ * Version: 1.0.0
  * Updated: 2026-11-14
  *
  * Changes:
@@ -55,6 +55,7 @@ const GGNAdmin = {
 
     currentQuestion: null,
     currentResult: null,
+    currentResultDetail: null,
     selectedSubjectId: "",
     questionRequestVersion: 0,
 
@@ -1601,81 +1602,61 @@ function populateCohortFilters() {
 ====================================================== */
 
 async function loadAdminResults() {
-    if (GGNAdmin.sectionRequests.results) {
-        return GGNAdmin.sectionRequests.results;
-    }
-
+    if (GGNAdmin.sectionRequests.results) return GGNAdmin.sectionRequests.results;
     const request = (async () => {
         adminSetLoading("result-list-loading", true);
         adminShow("result-table-container", false);
         adminShow("result-list-empty", false);
-
+        adminShow("result-list-panel", true);
+        adminShow("result-detail-panel", false);
         try {
-            if (!GGNAdmin.cohorts.length) {
-                await loadAdminCohorts();
+            if (!GGNAdmin.cohorts.length) await loadAdminCohorts();
+            const cohortId = adminElement("result-filter-cohort")?.value || "";
+            if (!cohortId) {
+                GGNAdmin.results = [];
+                renderAdminResults();
+                return false;
             }
-
-            const payload = {
-                subjectId:
-                    adminElement("result-filter-subject")?.value || "",
-
-                cohortId:
-                    adminElement("result-filter-cohort")?.value || "",
-
-                search:
-                    adminElement("result-search")?.value.trim() || ""
-            };
-
-            const response = await adminRequest(
-                "admin.results",
-                payload
-            );
-
-            GGNAdmin.results = adminGetArray(
-                response,
-                ["results", "items"]
-            );
-
+            const response = await adminRequest("admin.results", {
+                cohortId,
+                search: adminElement("result-search")?.value.trim() || ""
+            });
+            GGNAdmin.results = adminGetArray(response, ["results", "items"]);
             renderAdminResults();
-
             return true;
-
         } catch (error) {
             console.error("[GGN Admin] Results:", error);
-
-            adminShow("result-table-container", false);
-            adminShow("result-list-empty", true);
-
-            adminShowAlert(
-                `โหลดผลสอบไม่สำเร็จ: ${error.message}`,
-                "warning"
-            );
-
+            GGNAdmin.results = [];
+            renderAdminResults();
+            adminShowAlert(`โหลดผลสอบไม่สำเร็จ: ${error.message}`, "error");
             return false;
-
         } finally {
             adminSetLoading("result-list-loading", false);
             GGNAdmin.sectionRequests.results = null;
         }
     })();
-
     GGNAdmin.sectionRequests.results = request;
-
     return request;
 }
 
 
 function renderAdminResults() {
+    const head = adminElement("result-table-head");
     const tbody = adminElement("result-table-body");
-
-    if (!tbody) return;
-
+    if (!head || !tbody) return;
+    head.replaceChildren();
     tbody.replaceChildren();
 
-    adminText(
-        "result-count",
-        adminFormatNumber(GGNAdmin.results.length)
-    );
+    const header = document.createElement("tr");
+    ["ผู้เข้าสอบ", ...GGNAdmin.subjects.map(s =>
+        s.subjectCode || s.subjectName || s.subjectId
+    ), "จัดการ"].forEach(label => {
+        const th = document.createElement("th");
+        th.textContent = label;
+        header.appendChild(th);
+    });
+    head.appendChild(header);
+    adminText("result-count", `${adminFormatNumber(GGNAdmin.results.length)} รายชื่อ`);
 
     if (!GGNAdmin.results.length) {
         adminShow("result-table-container", false);
@@ -1683,547 +1664,226 @@ function renderAdminResults() {
         return;
     }
 
+    GGNAdmin.results.forEach(result => {
+        const row = document.createElement("tr");
+        row.appendChild(adminCreateCell(
+            `${result.examineeName || "-"} (${result.nationalId || "-"})`
+        ));
+        GGNAdmin.subjects.forEach(subject => {
+            const score = result.subjectScores?.[subject.subjectId];
+            const max = result.subjectMaxScores?.[subject.subjectId];
+            row.appendChild(adminCreateCell(
+                score === null || score === undefined
+                    ? "-"
+                    : `${adminFormatNumber(score, 2)} / ${adminFormatNumber(max ?? 0, 2)}`
+            ));
+        });
+        const action = document.createElement("td");
+        action.appendChild(adminCreateButton("ดู / แก้ไข", "btn btn-sm btn-primary",
+            () => openExamineeResultDetail(result)));
+        row.appendChild(action);
+        tbody.appendChild(row);
+    });
     adminShow("result-table-container", true);
     adminShow("result-list-empty", false);
+}
 
-    GGNAdmin.results.forEach((result, index) => {
-        const row = document.createElement("tr");
 
-        const cells = [
-            index + 1,
-            result.examineeName ||
-                result.fullName ||
-                result.fullname ||
-                "-",
-
-            result.subjectName || "-",
-
-            result.cohortName ||
-                result.cohortId ||
-                "-",
-
-            result.score ?? "-",
-            result.maxScore ?? "-",
-
-            result.resultStatus ||
-                result.status ||
-                "-",
-
-            adminFormatDate(
-                result.submittedAt ||
-                result.completedAt ||
-                result.updatedAt
-            )
-        ];
-
-        cells.forEach(value => {
-            row.appendChild(adminCreateCell(value));
+async function openExamineeResultDetail(result) {
+    GGNAdmin.currentResult = result;
+    adminShow("result-list-panel", false);
+    adminShow("result-detail-panel", true);
+    adminShow("result-detail-loading", true);
+    adminElement("result-detail-content")?.replaceChildren();
+    try {
+        const detail = await adminRequest("admin.result.detail", {
+            nationalId: result.nationalId,
+            cohortId: result.cohortId
         });
+        GGNAdmin.currentResultDetail = detail;
+        const person = detail.examinee || {};
+        adminText("result-detail-person",
+            `${person.fullName || result.examineeName || "-"} · ${person.nationalId || result.nationalId}`);
+        renderExamineeResultDetail(detail);
+    } catch (error) {
+        adminShowAlert(`โหลดรายละเอียดไม่สำเร็จ: ${error.message}`, "error");
+        adminShow("result-detail-panel", false);
+        adminShow("result-list-panel", true);
+    } finally {
+        adminShow("result-detail-loading", false);
+    }
+}
 
-        const actionCell = document.createElement("td");
 
-        const adjustButton = adminCreateButton(
-            "ปรับคะแนน",
-            "btn btn-sm btn-primary",
-            () => openScoreModal(result)
-        );
+function renderExamineeResultDetail(detail) {
+    const container = adminElement("result-detail-content");
+    if (!container) return;
+    container.replaceChildren();
 
-        actionCell.appendChild(adjustButton);
+    (detail.subjects || []).forEach(subject => {
+        const section = document.createElement("section");
+        section.className = "result-subject-detail";
+        const title = document.createElement("h3");
+        title.textContent =
+            `${subject.subjectName || subject.subjectCode} — ${adminFormatNumber(subject.score ?? 0, 2)} / ${adminFormatNumber(subject.maxScore ?? 0, 2)}`;
+        section.appendChild(title);
 
-        row.appendChild(actionCell);
-        tbody.appendChild(row);
+        if (!subject.attemptId) {
+            const empty = document.createElement("p");
+            empty.className = "text-muted";
+            empty.textContent = "ยังไม่มีผลสอบวิชานี้";
+            section.appendChild(empty);
+            container.appendChild(section);
+            return;
+        }
+
+        const grid = document.createElement("div");
+        grid.className = "result-question-grid";
+        (subject.questions || []).forEach(question => {
+            const card = document.createElement("div");
+            card.className = "result-question-card";
+            const number = document.createElement("strong");
+            number.textContent = `ข้อ ${question.questionNo}`;
+            card.appendChild(number);
+
+            const answer = document.createElement("div");
+            answer.className = "result-question-answer";
+            answer.textContent =
+                `ตอบ: ${question.selectedAnswer || "ไม่ตอบ"} · เฉลย: ${question.correctAnswer || "-"}`;
+            card.appendChild(answer);
+
+            const label = document.createElement("label");
+            label.textContent = `คะแนน (เต็ม ${adminFormatNumber(question.maxScore, 2)})`;
+            card.appendChild(label);
+
+            const input = document.createElement("input");
+            input.type = "number";
+            input.min = "0";
+            input.max = String(question.maxScore);
+            input.step = "0.01";
+            input.value = String(question.score ?? 0);
+            input.className = "form-control result-question-score";
+            input.dataset.attemptId = subject.attemptId;
+            input.dataset.questionId = question.questionId;
+            input.dataset.maxScore = String(question.maxScore);
+            input.addEventListener("change", saveQuestionScoreImmediately);
+            card.appendChild(input);
+            grid.appendChild(card);
+        });
+        section.appendChild(grid);
+        container.appendChild(section);
     });
 }
 
 
-/* ======================================================
-   14. SCORE ADJUSTMENT
-====================================================== */
-
-function openScoreModal(result) {
-    GGNAdmin.currentResult = result;
-
-    adminShowFormError("score-form-error", "");
-
-    adminText(
-        "score-modal-title",
-        "ปรับคะแนนผลสอบ"
-    );
-
-    adminText(
-        "adjust-examinee-name",
-        result.examineeName ||
-        result.fullName ||
-        result.fullname ||
-        "-"
-    );
-
-    adminText(
-        "adjust-subject-name",
-        result.subjectName || "-"
-    );
-
-    adminElement("adjust-attempt-id").value =
-        result.attemptId || "";
-
-    adminElement("adjust-score").value =
-        result.score ?? 0;
-
-    adminElement("adjust-reason").value = "";
-
-    adminShow("score-modal", true);
-}
-
-
-function closeScoreModal() {
-    adminShow("score-modal", false);
-    GGNAdmin.currentResult = null;
-}
-
-
-async function saveAdjustedScore(event) {
-    event.preventDefault();
-
-    adminShowFormError("score-form-error", "");
-
-    const attemptId =
-        adminElement("adjust-attempt-id").value.trim();
-
-    const score = Number(
-        adminElement("adjust-score").value
-    );
-
-    const reason =
-        adminElement("adjust-reason").value.trim();
-
-    if (!attemptId) {
-        adminShowFormError(
-            "score-form-error",
-            "ไม่พบรหัสการสอบ"
-        );
-
+async function saveQuestionScoreImmediately(event) {
+    const input = event.currentTarget;
+    const score = Number(input.value);
+    const maxScore = Number(input.dataset.maxScore);
+    if (!Number.isFinite(score) || score < 0 || score > maxScore) {
+        adminShowAlert(`คะแนนต้องอยู่ระหว่าง 0 ถึง ${maxScore}`, "warning");
+        input.value = String(Math.min(Math.max(score || 0, 0), maxScore));
         return;
     }
-
-    if (!Number.isFinite(score) || score < 0) {
-        adminShowFormError(
-            "score-form-error",
-            "กรุณาระบุคะแนนให้ถูกต้อง"
-        );
-
-        return;
-    }
-
-    if (!reason) {
-        adminShowFormError(
-            "score-form-error",
-            "กรุณาระบุเหตุผลในการปรับคะแนน"
-        );
-
-        return;
-    }
-
-    const maxScore = Number(
-        GGNAdmin.currentResult?.maxScore
-    );
-
-    if (
-        Number.isFinite(maxScore) &&
-        maxScore > 0 &&
-        score > maxScore
-    ) {
-        adminShowFormError(
-            "score-form-error",
-            `คะแนนต้องไม่เกิน ${maxScore}`
-        );
-
-        return;
-    }
-
-    const saveButton = adminElement("btn-save-score");
-
-    if (saveButton) {
-        saveButton.disabled = true;
-        saveButton.textContent = "กำลังบันทึก...";
-    }
-
+    input.disabled = true;
     try {
-        // API ใน js/api.js ระบุ action นี้
-        await adminRequest(
-            "admin.result.adjustScore",
-            {
-                attemptId,
-                score,
-                reason
-            }
+        const response = await adminRequest("admin.result.adjustScore", {
+            attemptId: input.dataset.attemptId,
+            questionId: input.dataset.questionId,
+            score
+        });
+        const subject = GGNAdmin.currentResultDetail?.subjects?.find(
+            item => item.attemptId === input.dataset.attemptId
         );
-
-        closeScoreModal();
-
-        adminShowAlert(
-            "ปรับคะแนนเรียบร้อยแล้ว",
-            "success"
-        );
-
-        await loadAdminResults();
-
-    } catch (error) {
-        console.error("[GGN Admin] Adjust score:", error);
-
-        adminShowFormError(
-            "score-form-error",
-            error.message
-        );
-
-    } finally {
-        if (saveButton) {
-            saveButton.disabled = false;
-            saveButton.textContent = "บันทึก";
+        if (subject) {
+            const question = subject.questions.find(item =>
+                item.questionId === input.dataset.questionId);
+            if (question) question.score = score;
+            subject.score = response.attemptScore ?? subject.score;
         }
+        adminShowAlert("บันทึกคะแนนข้อนี้แล้ว", "success");
+        await loadAdminResultsAfterEdit();
+    } catch (error) {
+        adminShowAlert(`บันทึกคะแนนไม่สำเร็จ: ${error.message}`, "error");
+    } finally {
+        input.disabled = false;
     }
 }
 
 
-/* ======================================================
-   15. SUMMARY
-====================================================== */
+async function loadAdminResultsAfterEdit() {
+    const cohortId = GGNAdmin.currentResult?.cohortId;
+    if (!cohortId) return;
+    try {
+        const response = await adminRequest("admin.results", {
+            cohortId,
+            search: GGNAdmin.currentResult?.nationalId || ""
+        });
+        const list = adminGetArray(response, ["results", "items"]);
+        const updated = list.find(row =>
+            String(row.nationalId) === String(GGNAdmin.currentResult.nationalId));
+        if (updated) {
+            GGNAdmin.currentResult = updated;
+            GGNAdmin.results = GGNAdmin.results.map(row =>
+                String(row.nationalId) === String(updated.nationalId)
+                    ? updated
+                    : row
+            );
+            renderAdminResults();
+        }
+    } catch (error) {
+        console.warn("[GGN Admin] Refresh score row:", error);
+    }
+}
+
 
 async function loadAdminSummary() {
-    if (GGNAdmin.sectionRequests.summary) {
-        return GGNAdmin.sectionRequests.summary;
-    }
-
+    if (GGNAdmin.sectionRequests.summary) return GGNAdmin.sectionRequests.summary;
     const request = (async () => {
         adminSetLoading("summary-loading", true);
         adminShow("summary-empty", false);
-
         try {
-            if (!GGNAdmin.cohorts.length) {
-                await loadAdminCohorts();
-            }
-
-            const cohortId =
-                adminElement("summary-filter-cohort")?.value || "";
-
+            if (!GGNAdmin.cohorts.length) await loadAdminCohorts();
+            const cohortId = adminElement("summary-filter-cohort")?.value || "";
             if (!cohortId) {
-                GGNAdmin.summary = null;
-
-                clearAdminSummary();
-
+                adminElement("summary-subject-body")?.replaceChildren();
                 adminShow("summary-empty", true);
-
                 return false;
             }
-
-            const response = await adminRequest(
-                "admin.result.summary",
-                { cohortId }
-            );
-
-            GGNAdmin.summary = response || {};
-
-            renderAdminSummary(GGNAdmin.summary);
-
+            const response = await adminRequest("admin.result.summary", { cohortId });
+            renderAdminSummary(response);
             return true;
-
         } catch (error) {
             console.error("[GGN Admin] Summary:", error);
-
-            adminShowAlert(
-                `โหลดสรุปผลไม่สำเร็จ: ${error.message}`,
-                "error"
-            );
-
-            clearAdminSummary();
-
+            adminElement("summary-subject-body")?.replaceChildren();
+            adminShow("summary-empty", true);
+            adminShowAlert(`โหลดสรุปผลไม่สำเร็จ: ${error.message}`, "error");
             return false;
-
         } finally {
             adminSetLoading("summary-loading", false);
             GGNAdmin.sectionRequests.summary = null;
         }
     })();
-
     GGNAdmin.sectionRequests.summary = request;
-
     return request;
 }
 
 
-function clearAdminSummary() {
-    adminText("summary-total-examinees", "0");
-    adminText("summary-total-passed", "0");
-    adminText("summary-total-failed", "0");
-    adminText("summary-average-score", "0");
-
-    const individualBody =
-        adminElement("summary-individual-body");
-
-    const subjectBody =
-        adminElement("summary-subject-body");
-
-    individualBody?.replaceChildren();
-    subjectBody?.replaceChildren();
-}
-
-
 function renderAdminSummary(summary) {
-    const data = summary.data || summary;
-
-    const individualRows =
-        data.individual ||
-        data.individualSummary ||
-        data.examinees ||
-        data.examineeSummary ||
-        [];
-
-    const subjectRows =
-        data.subject ||
-        data.subjectSummary ||
-        data.subjects ||
-        [];
-
-    const stats = data.summary || data.statistics || data;
-
-    adminText(
-        "summary-total-examinees",
-        adminFormatNumber(
-            stats.totalExaminees ??
-            stats.totalParticipants ??
-            individualRows.length
-        )
-    );
-
-    adminText(
-        "summary-total-passed",
-        adminFormatNumber(
-            stats.totalPassed ??
-            stats.passed ??
-            0
-        )
-    );
-
-    adminText(
-        "summary-total-failed",
-        adminFormatNumber(
-            stats.totalFailed ??
-            stats.failed ??
-            0
-        )
-    );
-
-    adminText(
-        "summary-average-score",
-        adminFormatNumber(
-            stats.averageScore ??
-            stats.avgScore ??
-            0,
-            2
-        )
-    );
-
-    renderAdminIndividualSummary(individualRows);
-    renderAdminSubjectSummary(subjectRows);
-
-    setAdminSummaryView(GGNAdmin.currentSummaryView);
-}
-
-
-function renderAdminIndividualSummary(rows) {
-    const head = adminElement("summary-individual-head");
-    const body = adminElement("summary-individual-body");
-
-    if (!head || !body) return;
-
-    head.replaceChildren();
-    body.replaceChildren();
-
-    const headerRow = document.createElement("tr");
-
-    [
-        "ลำดับ",
-        "รหัสพนักงาน",
-        "ชื่อผู้เข้าสอบ"
-    ].forEach(label => {
-        const th = document.createElement("th");
-        th.textContent = label;
-        headerRow.appendChild(th);
-    });
-
-    GGNAdmin.subjects.forEach(subject => {
-        const th = document.createElement("th");
-
-        th.textContent =
-            subject.subjectCode ||
-            subject.subjectName ||
-            subject.subjectId;
-
-        headerRow.appendChild(th);
-    });
-
-    [
-        "คะแนนรวม",
-        "ผลสอบ"
-    ].forEach(label => {
-        const th = document.createElement("th");
-        th.textContent = label;
-        headerRow.appendChild(th);
-    });
-
-    head.appendChild(headerRow);
-
-    if (!Array.isArray(rows) || !rows.length) {
-        return;
-    }
-
-    rows.forEach((item, index) => {
-        const row = document.createElement("tr");
-
-        row.appendChild(adminCreateCell(index + 1));
-
-        row.appendChild(adminCreateCell(
-            item.employeeCode || "-"
-        ));
-
-        row.appendChild(adminCreateCell(
-            item.examineeName ||
-            item.fullName ||
-            item.fullname ||
-            "-"
-        ));
-
-        const scores =
-            item.subjectScores ||
-            item.scoresBySubject ||
-            item.scores ||
-            {};
-
-        GGNAdmin.subjects.forEach(subject => {
-            const subjectId = String(subject.subjectId);
-
-            let score = "-";
-
-            if (Array.isArray(scores)) {
-                const found = scores.find(
-                    value =>
-                        String(value.subjectId) === subjectId
-                );
-
-                if (found) {
-                    score = found.score ?? "-";
-                }
-            } else if (scores && typeof scores === "object") {
-                score = scores[subjectId] ?? "-";
-
-                if (
-                    score &&
-                    typeof score === "object"
-                ) {
-                    score = score.score ?? "-";
-                }
-            }
-
-            row.appendChild(adminCreateCell(score));
-        });
-
-        row.appendChild(adminCreateCell(
-            item.totalScore ??
-            item.total ??
-            "-"
-        ));
-
-        row.appendChild(adminCreateCell(
-            item.resultStatus ||
-            item.passStatus ||
-            item.status ||
-            "-"
-        ));
-
-        body.appendChild(row);
-    });
-}
-
-
-function renderAdminSubjectSummary(rows) {
     const body = adminElement("summary-subject-body");
-
     if (!body) return;
-
     body.replaceChildren();
-
-    if (!Array.isArray(rows) || !rows.length) {
-        return;
-    }
-
-    rows.forEach((item, index) => {
+    const subjects = summary.subjects || [];
+    subjects.forEach((subject, index) => {
         const row = document.createElement("tr");
-
-        const cells = [
+        [
             index + 1,
-
-            item.subjectName ||
-            item.subjectCode ||
-            item.subjectId ||
-            "-",
-
-            item.totalExaminees ??
-            item.totalParticipants ??
-            item.count ??
-            0,
-
-            item.averageScore ??
-            item.avgScore ??
-            0,
-
-            item.totalPassed ??
-            item.passed ??
-            0,
-
-            item.totalFailed ??
-            item.failed ??
-            0,
-
-            item.highestScore ?? "-",
-            item.lowestScore ?? "-"
-        ];
-
-        cells.forEach(value => {
-            row.appendChild(adminCreateCell(value));
-        });
-
+            subject.subjectName || subject.subjectCode || "-",
+            adminFormatNumber(subject.averageScore ?? 0, 2)
+        ].forEach(value => row.appendChild(adminCreateCell(value)));
         body.appendChild(row);
     });
-}
-
-
-function setAdminSummaryView(view) {
-    if (!["individual", "subject"].includes(view)) {
-        return;
-    }
-
-    GGNAdmin.currentSummaryView = view;
-
-    const individualPanel =
-        adminElement("summary-individual-panel");
-
-    const subjectPanel =
-        adminElement("summary-subject-panel");
-
-    if (individualPanel) {
-        individualPanel.hidden = view !== "individual";
-    }
-
-    if (subjectPanel) {
-        subjectPanel.hidden = view !== "subject";
-    }
-
-    document.querySelectorAll("[data-summary-view]")
-        .forEach(button => {
-            button.classList.toggle(
-                "active",
-                button.dataset.summaryView === view
-            );
-        });
+    adminShow("summary-empty", subjects.length === 0);
 }
 
 
@@ -2285,6 +1945,12 @@ function setupAdminEvents() {
 
     adminElement("btn-refresh-results")
         ?.addEventListener("click", loadAdminResults);
+
+    adminElement("btn-back-results")
+        ?.addEventListener("click", () => {
+            adminShow("result-detail-panel", false);
+            adminShow("result-list-panel", true);
+        });
 
     adminElement("btn-search-results")
         ?.addEventListener("click", loadAdminResults);

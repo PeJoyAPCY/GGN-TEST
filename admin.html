@@ -359,240 +359,118 @@
             <div>
               <h1 class="page-title">ผลการสอบ</h1>
               <p class="page-description">
-                ตรวจสอบคะแนนและสถานะการสอบของผู้เข้าสอบ
+                ตรวจสอบคะแนนรายบุคคลทั้ง 9 วิชา และแก้ไขคะแนนรายข้อ
               </p>
             </div>
-
-            <button type="button"
-                    id="btn-refresh-results"
-                    class="btn btn-secondary">
+            <button type="button" id="btn-refresh-results" class="btn btn-secondary">
               ↻ รีเฟรช
             </button>
           </div>
 
           <div class="card mb-4">
             <div class="form-row">
-
               <div class="form-group">
-                <label for="result-filter-subject"
-                       class="form-label">
-                  รายวิชา
-                </label>
-                <select id="result-filter-subject"
-                        class="form-control">
-                  <option value="">ทุกวิชา</option>
+                <label for="result-filter-cohort" class="form-label">รุ่นการทดสอบ</label>
+                <select id="result-filter-cohort" class="form-control">
+                  <option value="">เลือกรุ่นสอบ</option>
                 </select>
               </div>
-
               <div class="form-group">
-                <label for="result-filter-cohort"
-                       class="form-label">
-                  รุ่นการทดสอบ
-                </label>
-                <select id="result-filter-cohort"
-                        class="form-control">
-                  <option value="">ทุกรุ่น</option>
-                </select>
+                <label for="result-search" class="form-label">ค้นหาผู้เข้าสอบ</label>
+                <input type="search" id="result-search" class="form-control"
+                       placeholder="ชื่อหรือเลขประจำตัวประชาชน">
               </div>
-
-              <div class="form-group">
-                <label for="result-search"
-                       class="form-label">
-                  ค้นหาผู้เข้าสอบ
-                </label>
-                <input type="search"
-                       id="result-search"
-                       class="form-control"
-                       placeholder="ชื่อหรือรหัสพนักงาน">
-              </div>
-
             </div>
-
-            <button type="button"
-                    id="btn-search-results"
-                    class="btn btn-primary">
-              ค้นหาผลสอบ
+            <button type="button" id="btn-search-results" class="btn btn-primary">
+              ค้นหา
             </button>
           </div>
 
-          <div class="card">
+          <div id="result-list-panel" class="card">
             <div class="card-header">
-              <div class="card-title">รายการผลสอบ</div>
-              <span id="result-count"
-                    class="badge badge-info">0 รายการ</span>
+              <div class="card-title">คะแนนผู้เข้าสอบรายบุคคล</div>
+              <span id="result-count" class="badge badge-info">0 รายการ</span>
             </div>
-
-            <div id="result-list-loading"
-                 class="text-center text-muted">
+            <div id="result-list-loading" class="text-center text-muted">
               กำลังโหลดผลสอบ...
             </div>
-
-            <div id="result-table-container"
-                 class="table-wrapper hidden">
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th>ผู้เข้าสอบ</th>
-                    <th>รายวิชา</th>
-                    <th>รุ่น</th>
-                    <th>คะแนน</th>
-                    <th>สถานะ</th>
-                    <th>วันที่สอบ</th>
-                    <th>จัดการ</th>
-                  </tr>
-                </thead>
+            <div id="result-table-container" class="table-wrapper hidden">
+              <table class="table result-wide-table">
+                <thead id="result-table-head"></thead>
                 <tbody id="result-table-body"></tbody>
               </table>
             </div>
-
-            <div id="result-list-empty"
-                 class="empty-state hidden">
-              <div class="empty-state-title">
-                ยังไม่มีข้อมูลผลสอบ
-              </div>
+            <div id="result-list-empty" class="empty-state hidden">
+              <div class="empty-state-title">ยังไม่มีข้อมูลผลสอบ</div>
             </div>
           </div>
 
+          <div id="result-detail-panel" class="card hidden mt-4">
+            <div class="card-header">
+              <div>
+                <div class="card-title">แก้ไขคะแนนรายบุคคล</div>
+                <div id="result-detail-person" class="text-muted"></div>
+              </div>
+              <button type="button" id="btn-back-results" class="btn btn-secondary">
+                กลับรายการ
+              </button>
+            </div>
+            <p class="text-muted">
+              แสดงคำตอบและคะแนนทั้ง 9 วิชา 90 ข้อ เปลี่ยนคะแนนแล้วระบบจะบันทึกทับทันที
+            </p>
+            <div id="result-detail-loading" class="text-center text-muted hidden">
+              กำลังโหลดรายละเอียด...
+            </div>
+            <div id="result-detail-content" class="result-detail-grid"></div>
+          </div>
         </section>
 
-        <!-- ==========================================
-             PAGE 4: SUMMARY
-             ========================================== -->
-        <section id="summary-section"
-                 class="admin-section hidden">
-
+        <section id="summary-section" class="admin-section hidden">
           <div class="page-header">
             <div>
               <h1 class="page-title">สรุปผลการสอบ</h1>
               <p class="page-description">
-                สรุปผลคะแนนแยกตามบุคคลและรายวิชา
+                คะแนนเฉลี่ยของผู้เข้าสอบทั้งรุ่น แยกตาม 9 วิชา
               </p>
             </div>
-
-            <button type="button"
-                    id="btn-refresh-summary"
-                    class="btn btn-secondary">
+            <button type="button" id="btn-refresh-summary" class="btn btn-secondary">
               ↻ รีเฟรช
             </button>
           </div>
 
           <div class="card mb-4">
             <div class="summary-toolbar">
-
               <div class="form-group">
-                <label for="summary-filter-cohort"
-                       class="form-label">
-                  รุ่นการทดสอบ
-                </label>
-                <select id="summary-filter-cohort"
-                        class="form-control">
+                <label for="summary-filter-cohort" class="form-label">รุ่นการทดสอบ</label>
+                <select id="summary-filter-cohort" class="form-control">
                   <option value="">เลือกรุ่นการทดสอบ</option>
                 </select>
               </div>
-
-              <button type="button"
-                      id="btn-load-summary"
-                      class="btn btn-primary">
-                แสดงสรุปผล
+              <button type="button" id="btn-load-summary" class="btn btn-primary">
+                แสดงคะแนนเฉลี่ย
               </button>
-
             </div>
-          </div>
-
-          <div class="summary-stat-grid">
-
-            <div class="summary-stat">
-              <div class="summary-stat-label">ผู้เข้าสอบ</div>
-              <div id="summary-total-examinees"
-                   class="summary-stat-value">-</div>
-            </div>
-
-            <div class="summary-stat">
-              <div class="summary-stat-label">สอบผ่าน</div>
-              <div id="summary-total-passed"
-                   class="summary-stat-value">-</div>
-            </div>
-
-            <div class="summary-stat">
-              <div class="summary-stat-label">สอบไม่ผ่าน</div>
-              <div id="summary-total-failed"
-                   class="summary-stat-value">-</div>
-            </div>
-
-            <div class="summary-stat">
-              <div class="summary-stat-label">คะแนนเฉลี่ย</div>
-              <div id="summary-average-score"
-                   class="summary-stat-value">-</div>
-            </div>
-
           </div>
 
           <div class="card">
-
-            <div class="summary-tabs">
-              <button type="button"
-                      class="summary-tab active"
-                      data-summary-view="individual">
-                รายบุคคล
-              </button>
-
-              <button type="button"
-                      class="summary-tab"
-                      data-summary-view="subject">
-                รายวิชา
-              </button>
+            <div id="summary-loading" class="text-center text-muted hidden">
+              กำลังคำนวณคะแนนเฉลี่ย...
             </div>
-
-            <div id="summary-loading"
-                 class="text-center text-muted hidden">
-              กำลังประมวลผลสรุปผล...
+            <div class="table-wrapper">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>ลำดับ</th>
+                    <th>รายวิชา</th>
+                    <th>คะแนนเฉลี่ย</th>
+                  </tr>
+                </thead>
+                <tbody id="summary-subject-body"></tbody>
+              </table>
             </div>
-
-            <div id="summary-individual-panel"
-                 class="summary-section-content">
-              <div class="summary-table-wrap">
-                <table class="table">
-                  <thead>
-                    <tr id="summary-individual-head">
-                      <th>รหัสพนักงาน</th>
-                      <th>ชื่อผู้เข้าสอบ</th>
-                      <th>คะแนนรวม</th>
-                      <th>สถานะ</th>
-                    </tr>
-                  </thead>
-                  <tbody id="summary-individual-body"></tbody>
-                </table>
-              </div>
+            <div id="summary-empty" class="empty-state hidden">
+              <div class="empty-state-title">ยังไม่มีข้อมูลคะแนน</div>
             </div>
-
-            <div id="summary-subject-panel"
-                 class="summary-section-content hidden">
-              <div class="summary-table-wrap">
-                <table class="table">
-                  <thead>
-                    <tr>
-                      <th>รายวิชา</th>
-                      <th>จำนวนผู้สอบ</th>
-                      <th>คะแนนเฉลี่ย</th>
-                      <th>ผ่าน</th>
-                      <th>ไม่ผ่าน</th>
-                    </tr>
-                  </thead>
-                  <tbody id="summary-subject-body"></tbody>
-                </table>
-              </div>
-            </div>
-
-            <div id="summary-empty"
-                 class="empty-state hidden">
-              <div class="empty-state-title">
-                ยังไม่มีข้อมูลสรุปผล
-              </div>
-              <p class="empty-state-description">
-                กรุณาเลือกรุ่นและกดแสดงสรุปผล
-              </p>
-            </div>
-
           </div>
         </section>
 

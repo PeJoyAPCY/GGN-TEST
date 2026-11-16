@@ -2,7 +2,7 @@
 /* ======================================================
    GGN TEST
    API SERVICE
-   Version: 1.0.1
+   Version: 1.0.0
    Updated: 2026-11-09
    File: js/api.js
 
@@ -214,6 +214,9 @@ function isGGNRetrySafeAction(action) {
     "admin.examSets",
     "admin.questions",
     "admin.results",
+    "admin.result.detail",
+    "admin.result.answers",
+    "admin.result.summary",
 
     "exam.examinees",
     "exam.attempt"
