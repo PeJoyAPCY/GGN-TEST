@@ -1752,6 +1752,32 @@ function renderExamineeResultDetail(detail) {
                 `ตอบ: ${question.selectedAnswer || "ไม่ตอบ"} · เฉลย: ${question.correctAnswer || "-"}`;
             card.appendChild(answer);
 
+            const answerLabel = document.createElement("label");
+            answerLabel.textContent = "แก้คำตอบที่ผู้เข้าสอบเลือก";
+            card.appendChild(answerLabel);
+
+            const answerSelect = document.createElement("select");
+            answerSelect.className = "form-control result-question-answer-select";
+            answerSelect.dataset.attemptId = subject.attemptId;
+            answerSelect.dataset.questionId = question.questionId;
+            answerSelect.dataset.correctAnswer = question.correctAnswer || "";
+            answerSelect.dataset.maxScore = String(question.maxScore);
+            [
+                { value: "", label: "ไม่ตอบ" },
+                { value: "A", label: `A. ${question.choiceA || ""}` },
+                { value: "B", label: `B. ${question.choiceB || ""}` },
+                { value: "C", label: `C. ${question.choiceC || ""}` },
+                { value: "D", label: `D. ${question.choiceD || ""}` }
+            ].forEach(optionData => {
+                const option = document.createElement("option");
+                option.value = optionData.value;
+                option.textContent = optionData.label;
+                answerSelect.appendChild(option);
+            });
+            answerSelect.value = question.selectedAnswer || "";
+            answerSelect.addEventListener("change", saveQuestionAnswerImmediately);
+            card.appendChild(answerSelect);
+
             const label = document.createElement("label");
             label.textContent = `คะแนน (เต็ม ${adminFormatNumber(question.maxScore, 2)})`;
             card.appendChild(label);
@@ -1773,6 +1799,40 @@ function renderExamineeResultDetail(detail) {
         section.appendChild(grid);
         container.appendChild(section);
     });
+}
+
+
+async function saveQuestionAnswerImmediately(event) {
+    const select = event.currentTarget;
+    const selectedAnswer = select.value;
+    select.disabled = true;
+    try {
+        const response = await adminRequest("admin.result.adjustAnswer", {
+            attemptId: select.dataset.attemptId,
+            questionId: select.dataset.questionId,
+            selectedAnswer
+        });
+        const subject = GGNAdmin.currentResultDetail?.subjects?.find(
+            item => item.attemptId === select.dataset.attemptId
+        );
+        if (subject) {
+            const question = subject.questions.find(item =>
+                item.questionId === select.dataset.questionId);
+            if (question) {
+                question.selectedAnswer = selectedAnswer;
+                question.score = response.score ?? 0;
+            }
+            subject.score = response.attemptScore ?? subject.score;
+        }
+        adminShowAlert("บันทึกคำตอบและคำนวณคะแนนข้อนี้ใหม่แล้ว", "success");
+        await openExamineeResultDetail(GGNAdmin.currentResult);
+        await loadAdminResultsAfterEdit();
+    } catch (error) {
+        adminShowAlert(`บันทึกคำตอบไม่สำเร็จ: ${error.message}`, "error");
+        await openExamineeResultDetail(GGNAdmin.currentResult);
+    } finally {
+        select.disabled = false;
+    }
 }
 
 
