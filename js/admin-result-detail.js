@@ -4,7 +4,7 @@
  * ADMIN INDIVIDUAL RESULT DETAIL
  * ======================================================
  * File: js/admin-result-detail.js
- * Version: 1.1.0
+ * Version: 1.2.1
  * Updated: 2026-11-16
  *
  * Responsibilities:
@@ -12,8 +12,9 @@
  * - Show 9 subject buttons in a 4-column grid
  * - Show one selected subject's 10 questions only
  * - Display question number, correct answer, selected answer,
- *   editable awarded score, and maximum score
- * - Save all changed question scores with the existing API
+ *   editable answer, awarded score, and maximum score
+ * - Preserve original examinee answers in ExamResponses.selectedAnswer
+ * - Save adjusted answer and score together
  *
  * Dependencies loaded before this file:
  * - js/api.js
@@ -25,7 +26,7 @@
 "use strict";
 
 (function () {
-    const STYLE_ID = "ggn-result-detail-style-v110";
+    const STYLE_ID = "ggn-result-detail-style-v121";
     const MODAL_ID = "admin-result-detail-modal";
 
     function ensureStyles() {
@@ -168,6 +169,16 @@
             }
             #${MODAL_ID} .result-detail-answer.is-correct { color: #15803d; }
             #${MODAL_ID} .result-detail-answer.is-wrong { color: #b91c1c; }
+            #${MODAL_ID} .result-detail-answer-select {
+                width: 68px;
+                max-width: 100%;
+                min-height: 36px;
+                padding: 5px 6px;
+                text-align: center;
+                text-align-last: center;
+                font-size: 14px;
+                font-weight: 700;
+            }
             #${MODAL_ID} .result-detail-score-input {
                 width: 66px;
                 max-width: 100%;
@@ -252,10 +263,11 @@
     }
 
     function hasUnsavedChanges(modal) {
-        return Array.from(modal.querySelectorAll(".result-detail-score-input:not(:disabled)"))
-            .some(input => Math.abs(
-                Number(input.value) - Number(input.dataset.originalScore)
-            ) > 0.000001);
+        const scoreChanged = Array.from(modal.querySelectorAll(".result-detail-score-input:not(:disabled)"))
+            .some(input => Math.abs(Number(input.value) - Number(input.dataset.originalScore)) > 0.000001);
+        const answerChanged = Array.from(modal.querySelectorAll(".result-detail-answer-select:not(:disabled)"))
+            .some(select => select.value !== (select.dataset.originalAnswer || ""));
+        return scoreChanged || answerChanged;
     }
 
     function confirmDiscardChanges(modal) {
@@ -348,11 +360,31 @@
                 `result-detail-answer ${question && question.correctAnswer ? "is-correct" : ""}`,
                 question?.correctAnswer || "—"
             ));
-            row.appendChild(makeElement(
-                "td",
-                `result-detail-answer ${question && question.selectedAnswer && question.selectedAnswer === question.correctAnswer ? "is-correct" : "is-wrong"}`,
-                question?.selectedAnswer || "—"
-            ));
+            const answerCell = document.createElement("td");
+            const answerSelect = document.createElement("select");
+            answerSelect.className = "form-control result-detail-answer-select";
+            answerSelect.setAttribute("aria-label", `คำตอบที่แสดงข้อ ${questionNo}`);
+            ["A", "B", "C", "D"].forEach(optionValue => {
+                const option = document.createElement("option");
+                option.value = optionValue;
+                option.textContent = optionValue;
+                answerSelect.appendChild(option);
+            });
+            answerSelect.value = question?.selectedAnswer || "";
+            if (!answerSelect.value) {
+                const blank = document.createElement("option");
+                blank.value = "";
+                blank.textContent = "—";
+                blank.selected = true;
+                answerSelect.insertBefore(blank, answerSelect.firstChild);
+            }
+            answerSelect.dataset.originalAnswer = question?.selectedAnswer || "";
+            answerSelect.dataset.originalSelectedAnswer = question?.originalSelectedAnswer || "";
+            answerSelect.dataset.correctAnswer = question?.correctAnswer || "";
+            answerSelect.dataset.questionId = question?.questionId || "";
+            answerSelect.disabled = !question || !question.questionId;
+            answerCell.appendChild(answerSelect);
+            row.appendChild(answerCell);
 
             const scoreCell = document.createElement("td");
             const input = document.createElement("input");
@@ -370,6 +402,13 @@
             input.dataset.originalScore = input.value;
             input.disabled = !question || !question.questionId;
             input.setAttribute("aria-label", `คะแนนข้อ ${questionNo}`);
+            input.addEventListener("input", () => {
+                input.classList.remove("is-invalid");
+                const max = Number(input.dataset.maxScore);
+                if (answerSelect.dataset.correctAnswer && max > 0 && Number(input.value) >= max) {
+                    answerSelect.value = answerSelect.dataset.correctAnswer;
+                }
+            });
             scoreCell.appendChild(input);
             row.appendChild(scoreCell);
 
@@ -387,7 +426,7 @@
         total.textContent = `คะแนนรวม ${formatNumber(score)} / ${formatNumber(max)}`;
         saveButton.disabled = false;
         saveButton.textContent = "บันทึกคะแนน";
-        setSaveMessage(modal, "แก้ไขคะแนนแล้วกดบันทึกคะแนนด้านล่าง", "");
+        setSaveMessage(modal, "แก้ไขคำตอบหรือคะแนน แล้วกดบันทึกด้านล่าง", "");
         modal._selectedSubject = subject;
     }
 
@@ -410,13 +449,24 @@
                 return;
             }
             input.classList.remove("is-invalid");
-            if (Math.abs(value - Number(input.dataset.originalScore)) > 0.000001) {
+            const answerSelect = input.closest("tr")?.querySelector(".result-detail-answer-select");
+            let selectedAnswer = answerSelect ? answerSelect.value : "";
+            // Full credit must never be displayed with an incorrect selected choice.
+            if (value >= max && max > 0 && answerSelect?.dataset.correctAnswer) {
+                selectedAnswer = answerSelect.dataset.correctAnswer;
+                answerSelect.value = selectedAnswer;
+            }
+            const answerChanged = answerSelect && selectedAnswer !== (answerSelect.dataset.originalAnswer || "");
+            const scoreChanged = Math.abs(value - Number(input.dataset.originalScore)) > 0.000001;
+            if (scoreChanged || answerChanged) {
                 changes.push({
                     input,
+                    answerSelect,
                     questionNo: Number(input.dataset.questionNo),
                     attemptId: input.dataset.attemptId,
                     questionId: input.dataset.questionId,
-                    awardedScore: value
+                    awardedScore: value,
+                    selectedAnswer
                 });
             }
         });
@@ -434,6 +484,7 @@
         saveButton.disabled = true;
         saveButton.textContent = "กำลังบันทึก...";
         inputs.forEach(input => { input.disabled = true; });
+        modal.querySelectorAll(".result-detail-answer-select").forEach(select => { select.disabled = true; });
         setSaveMessage(modal, `กำลังบันทึก ${changes.length} ข้อ...`, "");
 
         const saved = [];
@@ -444,9 +495,14 @@
                 await adminRequest("admin.result.adjustScore", {
                     attemptId: change.attemptId,
                     questionId: change.questionId,
-                    awardedScore: change.awardedScore
+                    awardedScore: change.awardedScore,
+                    selectedAnswer: change.selectedAnswer
                 });
                 change.input.dataset.originalScore = String(change.awardedScore);
+                if (change.answerSelect) {
+                    change.answerSelect.dataset.originalAnswer = change.selectedAnswer;
+                    change.answerSelect.dataset.originalSelectedAnswer = change.answerSelect.dataset.originalSelectedAnswer || "";
+                }
                 saved.push(change);
             } catch (error) {
                 failed.push({ change, error });
@@ -454,6 +510,9 @@
         }
 
         inputs.forEach(input => { input.disabled = false; });
+        modal.querySelectorAll(".result-detail-answer-select").forEach(select => {
+            select.disabled = !select.dataset.questionId;
+        });
         saveButton.disabled = false;
         saveButton.textContent = "บันทึกคะแนน";
 
@@ -462,7 +521,11 @@
             const question = (subject.questions || []).find(q =>
                 String(q.questionId) === String(change.questionId)
             );
-            if (question) question.awardedScore = change.awardedScore;
+            if (question) {
+                question.awardedScore = change.awardedScore;
+                question.selectedAnswer = change.selectedAnswer;
+                question.adjustedAnswer = change.selectedAnswer;
+            }
         });
         subject.score = calculateSubjectScore(subject);
         subject.maxScore = calculateSubjectMax(subject);
@@ -491,7 +554,7 @@
             return;
         }
 
-        const successMessage = `บันทึกคะแนนเรียบร้อย ${saved.length} ข้อ`;
+        const successMessage = `บันทึกคำตอบและคะแนนเรียบร้อย ${saved.length} ข้อ`;
         setSaveMessage(modal, successMessage, "success");
         if (typeof adminShowAlert === "function") adminShowAlert(successMessage, "success");
 
@@ -531,7 +594,7 @@
                     <div class="result-detail-loading">กำลังโหลดข้อมูลผลสอบ...</div>
                     <section class="result-detail-picker-view hidden">
                         <div class="result-detail-help" style="margin-bottom:12px;">
-                            เลือกวิชาที่ต้องการตรวจสอบหรือแก้ไขคะแนน
+                            เลือกวิชาที่ต้องการตรวจสอบหรือแก้ไขคำตอบและคะแนน<br>เมื่อกำหนดคะแนนเต็ม ระบบจะปรับคำตอบที่แสดงให้ตรงกับเฉลยโดยอัตโนมัติ
                         </div>
                         <div class="result-subject-picker"></div>
                     </section>
@@ -545,11 +608,11 @@
                             <table class="result-detail-table">
                                 <thead>
                                     <tr>
-                                        <th style="width:12%;">ข้อ</th>
-                                        <th style="width:18%;">เฉลย</th>
-                                        <th style="width:18%;">ตอบ</th>
-                                        <th style="width:26%;">คะแนน</th>
-                                        <th style="width:26%;">เต็ม</th>
+                                        <th style="width:20%;">ข้อ</th>
+                                        <th style="width:20%;">เฉลย</th>
+                                        <th style="width:20%;">ตอบ</th>
+                                        <th style="width:20%;">คะแนน</th>
+                                        <th style="width:20%;">เต็ม</th>
                                     </tr>
                                 </thead>
                                 <tbody></tbody>
