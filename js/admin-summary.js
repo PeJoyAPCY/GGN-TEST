@@ -10,10 +10,11 @@
  * Updated: 2026-11-16
  *
  * PURPOSE
- * - Load cohort summary
- * - Optional examinee search
- * - Display cohort or individual subject scores
- * - Prevent stale requests from overwriting newer results
+ * - Load cohort score summary
+ * - Optional search by name / national ID
+ * - Display average score by subject
+ * - Display examinee count in selected scope
+ * - Read-only
  *
  * DEPENDENCIES
  * - js/api.js
@@ -23,50 +24,36 @@
 
 "use strict";
 
-
-/* ======================================================
-   REQUEST CONTROL
-====================================================== */
-
 let GGNAdminSummaryRequestVersion = 0;
 
 
 /* ======================================================
-   LOAD SUMMARY
+   1. LOAD SUMMARY
 ====================================================== */
 
 async function loadAdminSummary() {
     const requestVersion = ++GGNAdminSummaryRequestVersion;
 
+    const cohortId =
+        adminElement("summary-filter-cohort")?.value || "";
+
+    const search =
+        adminElement("summary-search")?.value.trim() || "";
+
+    if (!cohortId) {
+        clearAdminSummary();
+
+        adminSetLoading("summary-loading", false);
+
+        return false;
+    }
+
     const request = (async () => {
         adminSetLoading("summary-loading", true);
-
-        adminShow("summary-table-container", false);
+        adminShow("summary-content", false);
         adminShow("summary-empty", false);
 
         try {
-            if (!GGNAdmin.cohorts.length) {
-                await loadAdminCohorts();
-            }
-
-            if (requestVersion !== GGNAdminSummaryRequestVersion) {
-                return false;
-            }
-
-            const cohortId =
-                adminElement("summary-filter-cohort")?.value || "";
-
-            if (!cohortId) {
-                clearAdminSummary();
-
-                adminShow("summary-empty", true);
-
-                return false;
-            }
-
-            const search =
-                adminElement("summary-search")?.value.trim() || "";
-
             const response = await adminRequest(
                 "admin.result.summary",
                 {
@@ -75,7 +62,10 @@ async function loadAdminSummary() {
                 }
             );
 
-            if (requestVersion !== GGNAdminSummaryRequestVersion) {
+            if (
+                requestVersion !==
+                GGNAdminSummaryRequestVersion
+            ) {
                 return false;
             }
 
@@ -86,28 +76,30 @@ async function loadAdminSummary() {
             return true;
 
         } catch (error) {
-            if (requestVersion === GGNAdminSummaryRequestVersion) {
+            if (
+                requestVersion ===
+                GGNAdminSummaryRequestVersion
+            ) {
                 console.error(
                     "[GGN Admin] Summary:",
                     error
                 );
 
-                GGNAdmin.summary = null;
-
                 clearAdminSummary();
-
-                adminShow("summary-empty", true);
 
                 adminShowAlert(
                     `โหลดสรุปผลไม่สำเร็จ: ${error.message}`,
-                    "danger"
+                    "error"
                 );
             }
 
             return false;
 
         } finally {
-            if (requestVersion === GGNAdminSummaryRequestVersion) {
+            if (
+                requestVersion ===
+                GGNAdminSummaryRequestVersion
+            ) {
                 adminSetLoading("summary-loading", false);
 
                 GGNAdmin.sectionRequests.summary = null;
@@ -122,28 +114,37 @@ async function loadAdminSummary() {
 
 
 /* ======================================================
-   CLEAR SUMMARY
+   2. CLEAR SUMMARY
 ====================================================== */
 
 function clearAdminSummary() {
-    adminElement("summary-subject-body")?.replaceChildren();
+    GGNAdmin.summary = null;
+
+    const tbody = adminElement("summary-table-body");
+
+    if (tbody) {
+        tbody.replaceChildren();
+    }
 
     adminText("summary-count", "0 คน");
+
+    adminShow("summary-content", false);
+    adminShow("summary-empty", true);
 }
 
 
 /* ======================================================
-   RENDER SUMMARY
+   3. RENDER SUMMARY
 ====================================================== */
 
 function renderAdminSummary(response) {
-    const body = adminElement("summary-subject-body");
+    const tbody = adminElement("summary-table-body");
 
-    if (!body) return;
+    if (!tbody) return;
 
-    body.replaceChildren();
+    tbody.replaceChildren();
 
-    const data = Array.isArray(response?.subjects)
+    const subjects = Array.isArray(response?.subjects)
         ? response.subjects
         : [];
 
@@ -156,42 +157,43 @@ function renderAdminSummary(response) {
         `${adminFormatNumber(examineeCount)} คน`
     );
 
-    if (!data.length) {
-        adminShow("summary-table-container", false);
+    if (!subjects.length) {
+        adminShow("summary-content", false);
         adminShow("summary-empty", true);
         return;
     }
 
-    data.forEach((subject, index) => {
+    adminShow("summary-content", true);
+    adminShow("summary-empty", false);
+
+    subjects.forEach(subject => {
         const row = document.createElement("tr");
 
         row.appendChild(
-            adminCreateCell(index + 1)
-        );
-
-        row.appendChild(
             adminCreateCell(
-                subject.subjectName ||
-                subject.subjectCode ||
-                "-"
+                subject.subjectCode || "-"
             )
         );
 
         row.appendChild(
             adminCreateCell(
-                subject.averageScore === null ||
-                subject.averageScore === undefined
-                    ? "—"
-                    : adminFormatNumber(
-                        subject.averageScore,
-                        2
-                    )
+                subject.subjectName || "-"
             )
         );
 
-        body.appendChild(row);
+        const average = subject.averageScore;
+
+        row.appendChild(
+            adminCreateCell(
+                average === null ||
+                average === undefined ||
+                average === ""
+                    ? "-"
+                    : adminFormatNumber(average, 2),
+                "text-center"
+            )
+        );
+
+        tbody.appendChild(row);
     });
-
-    adminShow("summary-table-container", true);
-    adminShow("summary-empty", false);
 }

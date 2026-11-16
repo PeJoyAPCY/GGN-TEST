@@ -11,108 +11,118 @@
  *
  * PURPOSE
  * - Load examinee results by cohort
- * - Optional search by name or national ID
- * - Render all subject scores
+ * - Optional search by name / national ID
+ * - Render one row per examinee
  * - Open individual result detail
- * - Prevent stale requests from overwriting newer results
  *
  * DEPENDENCIES
  * - js/api.js
  * - js/admin.js
+ * - js/admin-result-detail.js
  * ======================================================
  */
 
 "use strict";
 
-
-/* ======================================================
-   REQUEST CONTROL
-====================================================== */
-
 let GGNAdminResultsRequestVersion = 0;
 
 
 /* ======================================================
-   LOAD RESULTS
+   1. LOAD RESULTS
 ====================================================== */
 
 async function loadAdminResults() {
     const requestVersion = ++GGNAdminResultsRequestVersion;
 
+    const cohortId =
+        adminElement("result-filter-cohort")?.value || "";
+
+    const search =
+        adminElement("result-search")?.value.trim() || "";
+
+    // ต้องเลือกรุ่นสอบก่อนแสดงผล
+    if (!cohortId) {
+        GGNAdmin.results = [];
+        GGNAdmin.resultSubjects = [];
+
+        renderAdminResults();
+
+        adminText("result-count", "0 รายการ");
+        adminSetLoading("results-loading", false);
+
+        return false;
+    }
+
     const request = (async () => {
-        adminSetLoading("result-list-loading", true);
-        adminShow("result-table-container", false);
-        adminShow("result-list-empty", false);
+        adminSetLoading("results-loading", true);
+        adminShow("results-table-container", false);
+        adminShow("results-empty", false);
 
         try {
-            if (!GGNAdmin.cohorts.length) {
-                await loadAdminCohorts();
-            }
+            const response = await adminRequest(
+                "admin.results",
+                {
+                    cohortId,
+                    search
+                }
+            );
 
-            // Ignore this request if a newer search has started.
-            if (requestVersion !== GGNAdminResultsRequestVersion) {
+            // ป้องกันผลตอบกลับเก่าทับข้อมูลจากคำค้นล่าสุด
+            if (
+                requestVersion !==
+                GGNAdminResultsRequestVersion
+            ) {
                 return false;
             }
 
-            const cohortId =
-                adminElement("result-filter-cohort")?.value || "";
+            GGNAdmin.resultSubjects =
+                Array.isArray(response.subjects)
+                    ? response.subjects
+                    : [];
 
-            if (!cohortId) {
-                GGNAdmin.results = [];
-                GGNAdmin.resultSubjects = [];
-
-                renderAdminResults();
-                adminShow("result-list-empty", true);
-
-                return false;
-            }
-
-            const search =
-                adminElement("result-search")?.value.trim() || "";
-
-            const response = await adminRequest("admin.results", {
-                cohortId,
-                search
-            });
-
-            // Do not allow an older response to replace newer search results.
-            if (requestVersion !== GGNAdminResultsRequestVersion) {
-                return false;
-            }
-
-            GGNAdmin.resultSubjects = Array.isArray(response.subjects)
-                ? response.subjects
-                : [];
-
-            GGNAdmin.results = Array.isArray(response.results)
-                ? response.results
-                : [];
+            GGNAdmin.results =
+                Array.isArray(response.results)
+                    ? response.results
+                    : [];
 
             renderAdminResults();
+
+            adminText(
+                "result-count",
+                `${adminFormatNumber(GGNAdmin.results.length)} รายการ`
+            );
 
             return true;
 
         } catch (error) {
-            if (requestVersion === GGNAdminResultsRequestVersion) {
-                console.error("[GGN Admin] Results:", error);
+            if (
+                requestVersion ===
+                GGNAdminResultsRequestVersion
+            ) {
+                console.error(
+                    "[GGN Admin] Results:",
+                    error
+                );
 
                 GGNAdmin.results = [];
                 GGNAdmin.resultSubjects = [];
 
-                adminShow("result-table-container", false);
-                adminShow("result-list-empty", true);
+                renderAdminResults();
 
                 adminShowAlert(
                     `โหลดผลสอบไม่สำเร็จ: ${error.message}`,
-                    "danger"
+                    "error"
                 );
             }
 
             return false;
 
         } finally {
-            if (requestVersion === GGNAdminResultsRequestVersion) {
-                adminSetLoading("result-list-loading", false);
+            if (
+                requestVersion ===
+                GGNAdminResultsRequestVersion
+            ) {
+                adminSetLoading("results-loading", false);
 
                 GGNAdmin.sectionRequests.results = null;
             }
@@ -126,72 +136,35 @@ async function loadAdminResults() {
 
 
 /* ======================================================
-   RENDER RESULTS
+   2. RENDER RESULTS
 ====================================================== */
 
 function renderAdminResults() {
-    const head = adminElement("result-table-head");
-    const tbody = adminElement("result-table-body");
+    const tbody = adminElement("results-table-body");
 
-    if (!head || !tbody) return;
+    if (!tbody) return;
 
-    head.replaceChildren();
     tbody.replaceChildren();
 
-    const subjects = GGNAdmin.resultSubjects || [];
+    const results = Array.isArray(GGNAdmin.results)
+        ? GGNAdmin.results
+        : [];
 
-    const headerRow = document.createElement("tr");
+    const subjects = Array.isArray(GGNAdmin.resultSubjects)
+        ? GGNAdmin.resultSubjects
+        : [];
 
-    [
-        "ลำดับ",
-        "เลขประจำตัว",
-        "ชื่อผู้เข้าสอบ"
-    ].forEach(label => {
-        const th = document.createElement("th");
-        th.textContent = label;
-        headerRow.appendChild(th);
-    });
-
-    subjects.forEach(subject => {
-        const th = document.createElement("th");
-
-        th.textContent =
-            subject.subjectName ||
-            subject.subjectCode ||
-            subject.subjectId ||
-            "-";
-
-        th.title = subject.subjectCode || "";
-
-        headerRow.appendChild(th);
-    });
-
-    const actionHead = document.createElement("th");
-    actionHead.textContent = "รายละเอียด";
-
-    headerRow.appendChild(actionHead);
-    head.appendChild(headerRow);
-
-    adminText(
-        "result-count",
-        `${adminFormatNumber(GGNAdmin.results.length)} รายชื่อ`
-    );
-
-    if (!GGNAdmin.results.length) {
-        adminShow("result-table-container", false);
-        adminShow("result-list-empty", true);
+    if (!results.length) {
+        adminShow("results-table-container", false);
+        adminShow("results-empty", true);
         return;
     }
 
-    adminShow("result-table-container", true);
-    adminShow("result-list-empty", false);
+    adminShow("results-table-container", true);
+    adminShow("results-empty", false);
 
-    GGNAdmin.results.forEach((person, index) => {
+    results.forEach(person => {
         const row = document.createElement("tr");
-
-        row.appendChild(
-            adminCreateCell(index + 1)
-        );
 
         row.appendChild(
             adminCreateCell(person.nationalId || "-")
@@ -202,31 +175,35 @@ function renderAdminResults() {
         );
 
         subjects.forEach(subject => {
-            const score =
-                person.subjectScores?.[subject.subjectId];
+            const subjectCode =
+                subject.subjectCode ||
+                subject.subjectId ||
+                "";
 
-            const max =
-                person.subjectMaxScores?.[subject.subjectId];
+            const scoreMap =
+                person.subjectScores || {};
 
-            const cell = document.createElement("td");
+            const maxScoreMap =
+                person.subjectMaxScores || {};
 
-            cell.className = "result-score-cell";
+            const score = scoreMap[subjectCode];
+            const maxScore = maxScoreMap[subjectCode];
 
-            if (score === null || score === undefined) {
-                cell.textContent =
-                    `— / ${
-                        max === null || max === undefined
-                            ? "—"
-                            : adminFormatNumber(max, 2)
-                    }`;
-            } else {
-                cell.textContent =
-                    `${adminFormatNumber(score, 2)} / ${
-                        adminFormatNumber(max ?? 0, 2)
-                    }`;
+            let display = "-";
+
+            if (
+                score !== null &&
+                score !== undefined &&
+                score !== ""
+            ) {
+                display =
+                    `${adminFormatNumber(score, 2)} / ` +
+                    `${adminFormatNumber(maxScore ?? 0, 2)}`;
             }
 
-            row.appendChild(cell);
+            row.appendChild(
+                adminCreateCell(display, "text-center")
+            );
         });
 
         const actionCell = document.createElement("td");
@@ -240,6 +217,7 @@ function renderAdminResults() {
         );
 
         row.appendChild(actionCell);
+
         tbody.appendChild(row);
     });
 }
