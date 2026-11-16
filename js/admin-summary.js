@@ -6,7 +6,7 @@
  * ======================================================
  *
  * File: js/admin-summary.js
- * Version: 1.0.0
+ * Version: 1.0.1
  * Updated: 2026-11-16
  *
  * PURPOSE
@@ -15,10 +15,6 @@
  * - Display average score by subject
  * - Display examinee count in selected scope
  * - Read-only
- *
- * DEPENDENCIES
- * - js/api.js
- * - js/admin.js
  * ======================================================
  */
 
@@ -50,7 +46,7 @@ async function loadAdminSummary() {
 
     const request = (async () => {
         adminSetLoading("summary-loading", true);
-        adminShow("summary-content", false);
+        adminShow("summary-table-container", false);
         adminShow("summary-empty", false);
 
         try {
@@ -101,7 +97,6 @@ async function loadAdminSummary() {
                 GGNAdminSummaryRequestVersion
             ) {
                 adminSetLoading("summary-loading", false);
-
                 GGNAdmin.sectionRequests.summary = null;
             }
         }
@@ -120,7 +115,7 @@ async function loadAdminSummary() {
 function clearAdminSummary() {
     GGNAdmin.summary = null;
 
-    const tbody = adminElement("summary-table-body");
+    const tbody = adminElement("summary-subject-body");
 
     if (tbody) {
         tbody.replaceChildren();
@@ -128,7 +123,7 @@ function clearAdminSummary() {
 
     adminText("summary-count", "0 คน");
 
-    adminShow("summary-content", false);
+    adminShow("summary-table-container", false);
     adminShow("summary-empty", true);
 }
 
@@ -138,7 +133,7 @@ function clearAdminSummary() {
 ====================================================== */
 
 function renderAdminSummary(response) {
-    const tbody = adminElement("summary-table-body");
+    const tbody = adminElement("summary-subject-body");
 
     if (!tbody) return;
 
@@ -158,26 +153,27 @@ function renderAdminSummary(response) {
     );
 
     if (!subjects.length) {
-        adminShow("summary-content", false);
+        adminShow("summary-table-container", false);
         adminShow("summary-empty", true);
         return;
     }
 
-    adminShow("summary-content", true);
+    adminShow("summary-table-container", true);
     adminShow("summary-empty", false);
 
-    subjects.forEach(subject => {
+    subjects.forEach((subject, index) => {
         const row = document.createElement("tr");
 
         row.appendChild(
-            adminCreateCell(
-                subject.subjectCode || "-"
-            )
+            adminCreateCell(index + 1, "text-center")
         );
 
         row.appendChild(
             adminCreateCell(
-                subject.subjectName || "-"
+                subject.subjectName ||
+                subject.subjectCode ||
+                subject.subjectId ||
+                "-"
             )
         );
 

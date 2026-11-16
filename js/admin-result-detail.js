@@ -6,7 +6,7 @@
  * ======================================================
  *
  * File: js/admin-result-detail.js
- * Version: 1.0.0
+ * Version: 1.0.1
  * Updated: 2026-11-16
  *
  * PURPOSE
@@ -14,14 +14,12 @@
  * - Display questions and answers by subject
  * - Allow Admin to adjust awarded score
  * - Save adjusted score immediately
- *
- * DEPENDENCIES
- * - js/api.js
- * - js/admin.js
  * ======================================================
  */
 
 "use strict";
+
+let GGNAdminResultDetailRequestVersion = 0;
 
 
 /* ======================================================
@@ -35,7 +33,7 @@ function getAdminResultDetailModal() {
 
     modal = document.createElement("div");
     modal.id = "admin-result-detail-modal";
-    modal.className = "modal-overlay";
+    modal.className = "modal-overlay hidden";
     modal.hidden = true;
 
     modal.innerHTML = `
@@ -61,8 +59,9 @@ function getAdminResultDetailModal() {
             </div>
 
             <div id="admin-result-detail-status"
-                 class="alert"
-                 hidden></div>
+                 class="alert hidden"
+                 role="status"
+                 aria-live="polite"></div>
 
             <div id="admin-result-detail-loading"
                  class="loading">
@@ -90,13 +89,9 @@ function getAdminResultDetailModal() {
 
 
 function closeAdminResultDetail() {
-    const modal = adminElement(
-        "admin-result-detail-modal"
-    );
+    GGNAdminResultDetailRequestVersion += 1;
 
-    if (modal) {
-        modal.hidden = true;
-    }
+    adminShow("admin-result-detail-modal", false);
 }
 
 
@@ -114,17 +109,15 @@ async function openAdminExamineeResult(person) {
         return;
     }
 
+    const requestVersion =
+        ++GGNAdminResultDetailRequestVersion;
+
     const modal = getAdminResultDetailModal();
 
-    const personElement = adminElement(
-        "admin-result-detail-person"
+    adminText(
+        "admin-result-detail-person",
+        `${person.examineeName || "-"} | ${person.nationalId}`
     );
-
-    if (personElement) {
-        personElement.textContent =
-            `${person.examineeName || "-"} | ` +
-            `${person.nationalId}`;
-    }
 
     const content = adminElement(
         "admin-result-detail-content"
@@ -142,12 +135,16 @@ async function openAdminExamineeResult(person) {
 
     if (status) {
         status.hidden = true;
+        status.classList.add("hidden");
         status.textContent = "";
     }
 
-    if (loading) loading.hidden = false;
+    if (loading) {
+        loading.hidden = false;
+        loading.classList.remove("hidden");
+    }
 
-    modal.hidden = false;
+    adminShow("admin-result-detail-modal", true);
 
     try {
         const response = await adminRequest(
@@ -158,12 +155,18 @@ async function openAdminExamineeResult(person) {
             }
         );
 
-        // ผู้ใช้อาจปิดหน้าต่างระหว่างรอ API
-        if (!modal.isConnected || modal.hidden) {
+        if (
+            requestVersion !==
+            GGNAdminResultDetailRequestVersion ||
+            !modal.isConnected
+        ) {
             return;
         }
 
-        if (loading) loading.hidden = true;
+        if (loading) {
+            loading.hidden = true;
+            loading.classList.add("hidden");
+        }
 
         const subjects = Array.isArray(response.subjects)
             ? response.subjects
@@ -171,19 +174,25 @@ async function openAdminExamineeResult(person) {
 
         renderAdminResultDetail(
             subjects,
-            content,
-            person
+            content
         );
 
     } catch (error) {
-        if (!modal.isConnected || modal.hidden) {
+        if (
+            requestVersion !==
+            GGNAdminResultDetailRequestVersion ||
+            !modal.isConnected
+        ) {
             return;
         }
 
-        if (loading) loading.hidden = true;
+        if (loading) {
+            loading.hidden = true;
+            loading.classList.add("hidden");
+        }
 
         if (status) {
-            status.className = "alert alert-error";
+            status.className = "alert alert-danger";
             status.textContent =
                 `โหลดรายละเอียดผลสอบไม่สำเร็จ: ${error.message}`;
             status.hidden = false;
@@ -201,7 +210,7 @@ async function openAdminExamineeResult(person) {
    3. RENDER DETAIL
 ====================================================== */
 
-function renderAdminResultDetail(subjects, container, person) {
+function renderAdminResultDetail(subjects, container) {
     if (!container) return;
 
     container.replaceChildren();
@@ -245,10 +254,10 @@ function renderAdminResultDetail(subjects, container, person) {
         }
 
         const tableWrapper = document.createElement("div");
-        tableWrapper.className = "table-responsive";
+        tableWrapper.className = "table-wrapper";
 
         const table = document.createElement("table");
-        table.className = "admin-table result-detail-table";
+        table.className = "table result-detail-table";
 
         const thead = document.createElement("thead");
         const headerRow = document.createElement("tr");
@@ -309,19 +318,14 @@ function renderAdminResultDetail(subjects, container, person) {
             row.appendChild(questionCell);
 
             row.appendChild(
-                adminCreateCell(
-                    question.selectedAnswer || "-"
-                )
+                adminCreateCell(question.selectedAnswer || "-")
             );
 
             row.appendChild(
-                adminCreateCell(
-                    question.correctAnswer || "-"
-                )
+                adminCreateCell(question.correctAnswer || "-")
             );
 
             const scoreCell = document.createElement("td");
-
             const scoreInput = document.createElement("input");
 
             scoreInput.type = "number";
@@ -375,7 +379,7 @@ function renderAdminResultDetail(subjects, container, person) {
 ====================================================== */
 
 async function saveAdminAdjustedScore(input) {
-    if (!input) return;
+    if (!input || input.disabled) return;
 
     const previousScore = Number(
         input.dataset.originalScore || 0
@@ -449,7 +453,6 @@ async function saveAdminAdjustedScore(input) {
             status.hidden = false;
         }
 
-        // อัปเดตตารางผลสอบด้านหลังหน้าต่างรายละเอียด
         await loadAdminResults();
 
     } catch (error) {

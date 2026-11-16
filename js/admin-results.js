@@ -6,19 +6,15 @@
  * ======================================================
  *
  * File: js/admin-results.js
- * Version: 1.0.0
+ * Version: 1.0.1
  * Updated: 2026-11-16
  *
  * PURPOSE
  * - Load examinee results by cohort
  * - Optional search by name / national ID
  * - Render one row per examinee
+ * - Render dynamic subject columns
  * - Open individual result detail
- *
- * DEPENDENCIES
- * - js/api.js
- * - js/admin.js
- * - js/admin-result-detail.js
  * ======================================================
  */
 
@@ -40,23 +36,22 @@ async function loadAdminResults() {
     const search =
         adminElement("result-search")?.value.trim() || "";
 
-    // ต้องเลือกรุ่นสอบก่อนแสดงผล
     if (!cohortId) {
         GGNAdmin.results = [];
         GGNAdmin.resultSubjects = [];
 
         renderAdminResults();
 
-        adminText("result-count", "0 รายการ");
-        adminSetLoading("results-loading", false);
+        adminText("result-count", "0 รายชื่อ");
+        adminSetLoading("result-list-loading", false);
 
         return false;
     }
 
     const request = (async () => {
-        adminSetLoading("results-loading", true);
-        adminShow("results-table-container", false);
-        adminShow("results-empty", false);
+        adminSetLoading("result-list-loading", true);
+        adminShow("result-table-container", false);
+        adminShow("result-list-empty", false);
 
         try {
             const response = await adminRequest(
@@ -67,7 +62,6 @@ async function loadAdminResults() {
                 }
             );
 
-            // ป้องกันผลตอบกลับเก่าทับข้อมูลจากคำค้นล่าสุด
             if (
                 requestVersion !==
                 GGNAdminResultsRequestVersion
@@ -89,7 +83,7 @@ async function loadAdminResults() {
 
             adminText(
                 "result-count",
-                `${adminFormatNumber(GGNAdmin.results.length)} รายการ`
+                `${adminFormatNumber(GGNAdmin.results.length)} รายชื่อ`
             );
 
             return true;
@@ -122,8 +116,7 @@ async function loadAdminResults() {
                 requestVersion ===
                 GGNAdminResultsRequestVersion
             ) {
-                adminSetLoading("results-loading", false);
-
+                adminSetLoading("result-list-loading", false);
                 GGNAdmin.sectionRequests.results = null;
             }
         }
@@ -136,11 +129,56 @@ async function loadAdminResults() {
 
 
 /* ======================================================
-   2. RENDER RESULTS
+   2. RENDER TABLE HEADER
+====================================================== */
+
+function renderAdminResultsHeader() {
+    const thead = adminElement("result-table-head");
+
+    if (!thead) return;
+
+    thead.replaceChildren();
+
+    const row = document.createElement("tr");
+
+    [
+        "เลขประจำตัวประชาชน",
+        "ชื่อ - นามสกุล"
+    ].forEach(label => {
+        const th = document.createElement("th");
+        th.textContent = label;
+        row.appendChild(th);
+    });
+
+    GGNAdmin.resultSubjects.forEach(subject => {
+        const th = document.createElement("th");
+
+        th.textContent =
+            subject.subjectCode ||
+            subject.subjectName ||
+            subject.subjectId ||
+            "-";
+
+        th.title = subject.subjectName || "";
+
+        row.appendChild(th);
+    });
+
+    const actionHeader = document.createElement("th");
+    actionHeader.textContent = "รายละเอียด";
+
+    row.appendChild(actionHeader);
+
+    thead.appendChild(row);
+}
+
+
+/* ======================================================
+   3. RENDER RESULTS
 ====================================================== */
 
 function renderAdminResults() {
-    const tbody = adminElement("results-table-body");
+    const tbody = adminElement("result-table-body");
 
     if (!tbody) return;
 
@@ -154,14 +192,16 @@ function renderAdminResults() {
         ? GGNAdmin.resultSubjects
         : [];
 
+    renderAdminResultsHeader();
+
     if (!results.length) {
-        adminShow("results-table-container", false);
-        adminShow("results-empty", true);
+        adminShow("result-table-container", false);
+        adminShow("result-list-empty", true);
         return;
     }
 
-    adminShow("results-table-container", true);
-    adminShow("results-empty", false);
+    adminShow("result-table-container", true);
+    adminShow("result-list-empty", false);
 
     results.forEach(person => {
         const row = document.createElement("tr");
@@ -174,20 +214,27 @@ function renderAdminResults() {
             adminCreateCell(person.examineeName || "-")
         );
 
+        const scoreMap = person.subjectScores || {};
+        const maxScoreMap = person.subjectMaxScores || {};
+
         subjects.forEach(subject => {
-            const subjectCode =
+            const subjectCode = String(
                 subject.subjectCode ||
                 subject.subjectId ||
-                "";
+                ""
+            );
 
-            const scoreMap =
-                person.subjectScores || {};
+            const subjectId = String(
+                subject.subjectId || ""
+            );
 
-            const maxScoreMap =
-                person.subjectMaxScores || {};
+            const score =
+                scoreMap[subjectCode] ??
+                scoreMap[subjectId];
 
-            const score = scoreMap[subjectCode];
-            const maxScore = maxScoreMap[subjectCode];
+            const maxScore =
+                maxScoreMap[subjectCode] ??
+                maxScoreMap[subjectId];
 
             let display = "-";
 
