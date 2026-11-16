@@ -2029,15 +2029,6 @@ function setupAdminEvents() {
             }
         });
 
-    adminElement("btn-close-score-modal")
-        ?.addEventListener("click", closeScoreModal);
-
-    adminElement("btn-cancel-score")
-        ?.addEventListener("click", closeScoreModal);
-
-    adminElement("score-form")
-        ?.addEventListener("submit", saveAdjustedScore);
-
     adminElement("btn-admin-confirm-cancel")
         ?.addEventListener("click", () => {
             adminShow("admin-confirm-modal", false);
