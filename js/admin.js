@@ -5,10 +5,13 @@
  * ======================================================
  *
  * File: js/admin.js
- * Version: 3.3.0
+ * Version: 3.4.0
  * Updated: 2026-11-16
  *
  * Changes:
+ * - Populate result and summary cohort selectors after dashboard preload
+ * - Add optional person filter to cohort summary
+ * - Show examinee count used by the selected summary scope
  * - Compact Dashboard with 9 subject cards
  * - Subject exam open/close switch
  * - Question management with correct API field names
@@ -445,6 +448,11 @@ async function loadAdminDashboard() {
                 cohortResponse,
                 ["cohorts", "items"]
             );
+
+            // Dashboard preloads the cohort list; populate both result-page
+            // selectors here as well. Otherwise later pages see a non-empty
+            // in-memory list and skip reloading while their selects stay blank.
+            populateCohortFilters();
 
             adminText(
                 "stat-total-subjects",
@@ -1912,7 +1920,11 @@ async function loadAdminSummary() {
                 return false;
             }
 
-            const response = await adminRequest("admin.result.summary", { cohortId });
+            const search = adminElement("summary-search")?.value.trim() || "";
+            const response = await adminRequest("admin.result.summary", {
+                cohortId,
+                search
+            });
             renderAdminSummary(response);
             return true;
         } catch (error) {
@@ -1934,6 +1946,7 @@ async function loadAdminSummary() {
 
 function clearAdminSummary() {
     adminElement("summary-subject-body")?.replaceChildren();
+    adminText("summary-count", "0 คน");
 }
 
 
@@ -1943,6 +1956,8 @@ function renderAdminSummary(response) {
     body.replaceChildren();
 
     const data = response?.subjects || response?.data?.subjects || [];
+    const examineeCount = Number(response?.examineeCount ?? response?.data?.examineeCount ?? 0);
+    adminText("summary-count", `${adminFormatNumber(examineeCount)} คน`);
     if (!Array.isArray(data) || !data.length) {
         adminShow("summary-table-container", false);
         adminShow("summary-empty", true);
@@ -2048,6 +2063,14 @@ function setupAdminEvents() {
 
     adminElement("summary-filter-cohort")
         ?.addEventListener("change", loadAdminSummary);
+
+    adminElement("summary-search")
+        ?.addEventListener("keydown", event => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                loadAdminSummary();
+            }
+        });
 
     adminElement("btn-add-subject")
         ?.addEventListener("click", openSubjectAddModal);

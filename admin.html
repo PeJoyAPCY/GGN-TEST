@@ -429,6 +429,11 @@
                   <option value="">เลือกรุ่นการทดสอบ</option>
                 </select>
               </div>
+              <div class="form-group">
+                <label for="summary-search" class="form-label">ค้นหาผู้เข้าสอบ (ไม่บังคับ)</label>
+                <input type="search" id="summary-search" class="form-control"
+                       placeholder="ชื่อ นามสกุล หรือเลขประจำตัว">
+              </div>
             </div>
             <button type="button" id="btn-load-summary" class="btn btn-primary">
               แสดงสรุปผล
@@ -438,6 +443,7 @@
           <div class="card">
             <div class="card-header">
               <div class="card-title">คะแนนเฉลี่ยรายวิชา</div>
+              <span id="summary-count" class="badge badge-info">0 คน</span>
             </div>
             <div id="summary-loading" class="text-center text-muted hidden">
               กำลังประมวลผลสรุปผล...
@@ -456,7 +462,7 @@
             </div>
             <div id="summary-empty" class="empty-state hidden">
               <div class="empty-state-title">ยังไม่มีข้อมูลสรุปผล</div>
-              <p class="empty-state-description">กรุณาเลือกรุ่นและกดแสดงสรุปผล</p>
+              <p class="empty-state-description">เลือกรุ่นก่อน หากต้องการดูเฉพาะบุคคลให้ค้นหาด้วยชื่อหรือเลขประจำตัว</p>
             </div>
           </div>
         </section>
