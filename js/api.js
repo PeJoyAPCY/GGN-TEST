@@ -2,8 +2,8 @@
 /* ======================================================
    GGN TEST
    API SERVICE
-   Version: 1.0.0
-   Updated: 2026-11-09
+   Version: 1.0.2
+   Updated: 2026-11-16
    File: js/api.js
 
    CHANGE:

@@ -352,14 +352,12 @@
         <!-- ==========================================
              PAGE 3: RESULTS
              ========================================== -->
-        <section id="results-section"
-                 class="admin-section hidden">
-
+        <section id="results-section" class="admin-section hidden">
           <div class="page-header">
             <div>
               <h1 class="page-title">ผลการสอบ</h1>
               <p class="page-description">
-                ตรวจสอบคะแนนรายบุคคลทั้ง 9 วิชา และแก้ไขคะแนนรายข้อ
+                ตรวจสอบคะแนนรายบุคคลครบ 9 วิชา และแก้ไขคะแนนรายข้อได้
               </p>
             </div>
             <button type="button" id="btn-refresh-results" class="btn btn-secondary">
@@ -372,65 +370,50 @@
               <div class="form-group">
                 <label for="result-filter-cohort" class="form-label">รุ่นการทดสอบ</label>
                 <select id="result-filter-cohort" class="form-control">
-                  <option value="">เลือกรุ่นสอบ</option>
+                  <option value="">เลือกรุ่นการทดสอบ</option>
                 </select>
               </div>
               <div class="form-group">
                 <label for="result-search" class="form-label">ค้นหาผู้เข้าสอบ</label>
                 <input type="search" id="result-search" class="form-control"
-                       placeholder="ชื่อหรือเลขประจำตัวประชาชน">
+                       placeholder="ชื่อ นามสกุล หรือเลขประจำตัว">
               </div>
             </div>
             <button type="button" id="btn-search-results" class="btn btn-primary">
-              ค้นหา
+              ค้นหาผลสอบ
             </button>
           </div>
 
-          <div id="result-list-panel" class="card">
+          <div class="card">
             <div class="card-header">
-              <div class="card-title">คะแนนผู้เข้าสอบรายบุคคล</div>
-              <span id="result-count" class="badge badge-info">0 รายการ</span>
+              <div class="card-title">คะแนนรายบุคคล</div>
+              <span id="result-count" class="badge badge-info">0 รายชื่อ</span>
             </div>
-            <div id="result-list-loading" class="text-center text-muted">
+            <div id="result-list-loading" class="text-center text-muted hidden">
               กำลังโหลดผลสอบ...
             </div>
-            <div id="result-table-container" class="table-wrapper hidden">
-              <table class="table result-wide-table">
+            <div id="result-table-container" class="table-wrapper hidden result-wide-table">
+              <table class="table result-person-table">
                 <thead id="result-table-head"></thead>
                 <tbody id="result-table-body"></tbody>
               </table>
             </div>
             <div id="result-list-empty" class="empty-state hidden">
               <div class="empty-state-title">ยังไม่มีข้อมูลผลสอบ</div>
+              <p class="empty-state-description">เลือกรุ่นการทดสอบและค้นหาผู้เข้าสอบ</p>
             </div>
-          </div>
-
-          <div id="result-detail-panel" class="card hidden mt-4">
-            <div class="card-header">
-              <div>
-                <div class="card-title">แก้ไขคะแนนรายบุคคล</div>
-                <div id="result-detail-person" class="text-muted"></div>
-              </div>
-              <button type="button" id="btn-back-results" class="btn btn-secondary">
-                กลับรายการ
-              </button>
-            </div>
-            <p class="text-muted">
-              แสดงคำตอบและคะแนนทั้ง 9 วิชา 90 ข้อ เปลี่ยนคะแนนแล้วระบบจะบันทึกทับทันที
-            </p>
-            <div id="result-detail-loading" class="text-center text-muted hidden">
-              กำลังโหลดรายละเอียด...
-            </div>
-            <div id="result-detail-content" class="result-detail-grid"></div>
           </div>
         </section>
 
+        <!-- ==========================================
+             PAGE 4: SUMMARY
+             ========================================== -->
         <section id="summary-section" class="admin-section hidden">
           <div class="page-header">
             <div>
               <h1 class="page-title">สรุปผลการสอบ</h1>
               <p class="page-description">
-                คะแนนเฉลี่ยของผู้เข้าสอบทั้งรุ่น แยกตาม 9 วิชา
+                คะแนนเฉลี่ยของผู้เข้าสอบที่สอบเสร็จแล้ว แยกตามรายวิชา
               </p>
             </div>
             <button type="button" id="btn-refresh-summary" class="btn btn-secondary">
@@ -439,25 +422,28 @@
           </div>
 
           <div class="card mb-4">
-            <div class="summary-toolbar">
+            <div class="form-row">
               <div class="form-group">
                 <label for="summary-filter-cohort" class="form-label">รุ่นการทดสอบ</label>
                 <select id="summary-filter-cohort" class="form-control">
                   <option value="">เลือกรุ่นการทดสอบ</option>
                 </select>
               </div>
-              <button type="button" id="btn-load-summary" class="btn btn-primary">
-                แสดงคะแนนเฉลี่ย
-              </button>
             </div>
+            <button type="button" id="btn-load-summary" class="btn btn-primary">
+              แสดงสรุปผล
+            </button>
           </div>
 
           <div class="card">
-            <div id="summary-loading" class="text-center text-muted hidden">
-              กำลังคำนวณคะแนนเฉลี่ย...
+            <div class="card-header">
+              <div class="card-title">คะแนนเฉลี่ยรายวิชา</div>
             </div>
-            <div class="table-wrapper">
-              <table class="table">
+            <div id="summary-loading" class="text-center text-muted hidden">
+              กำลังประมวลผลสรุปผล...
+            </div>
+            <div id="summary-table-container" class="table-wrapper hidden">
+              <table class="table summary-average-table">
                 <thead>
                   <tr>
                     <th>ลำดับ</th>
@@ -469,7 +455,8 @@
               </table>
             </div>
             <div id="summary-empty" class="empty-state hidden">
-              <div class="empty-state-title">ยังไม่มีข้อมูลคะแนน</div>
+              <div class="empty-state-title">ยังไม่มีข้อมูลสรุปผล</div>
+              <p class="empty-state-description">กรุณาเลือกรุ่นและกดแสดงสรุปผล</p>
             </div>
           </div>
         </section>
@@ -779,92 +766,6 @@
   </div>
 
   <!-- ================================================
-       SCORE ADJUSTMENT MODAL
-       ================================================ -->
-  <div id="score-modal"
-       class="modal-overlay hidden"
-       role="dialog"
-       aria-modal="true"
-       aria-labelledby="score-modal-title">
-
-    <div class="modal">
-
-      <div class="modal-header">
-        <h3 id="score-modal-title" class="modal-title">
-          ปรับคะแนนสอบ
-        </h3>
-
-        <button type="button"
-                id="btn-close-score-modal"
-                class="btn btn-secondary btn-sm">
-          ปิด
-        </button>
-      </div>
-
-      <form id="score-form">
-        <div class="modal-body">
-
-          <input type="hidden" id="adjust-attempt-id">
-
-          <div class="form-group">
-            <label class="form-label">ผู้เข้าสอบ</label>
-            <strong id="adjust-examinee-name">-</strong>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">รายวิชา</label>
-            <strong id="adjust-subject-name">-</strong>
-          </div>
-
-          <div class="form-group">
-            <label for="adjust-score" class="form-label">
-              คะแนนใหม่ <span class="required">*</span>
-            </label>
-            <input type="number"
-                   id="adjust-score"
-                   class="form-control"
-                   min="0"
-                   step="0.5"
-                   required>
-            <div class="form-hint">
-              คะแนนต้องไม่เกินคะแนนเต็ม
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="adjust-reason" class="form-label">
-              เหตุผลในการปรับคะแนน <span class="required">*</span>
-            </label>
-            <textarea id="adjust-reason"
-                      class="form-control"
-                      rows="3"
-                      required
-                      placeholder="ระบุเหตุผลในการปรับคะแนน..."></textarea>
-          </div>
-
-          <div id="score-form-error"
-               class="alert alert-danger hidden"></div>
-
-        </div>
-
-        <div class="modal-footer">
-          <button type="button"
-                  id="btn-cancel-score"
-                  class="btn btn-secondary">
-            ยกเลิก
-          </button>
-
-          <button type="submit"
-                  id="btn-save-score"
-                  class="btn btn-primary">
-            บันทึกคะแนน
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- ================================================
        CONFIRMATION MODAL
        ================================================ -->
   <div id="admin-confirm-modal"
@@ -904,7 +805,7 @@
 
   <!-- SCRIPTS -->
   <script src="js/api.js"></script>
-  <script src="js/admin.js?v=3.2.1"></script>
+  <script src="js/admin.js?v=3.2.0"></script>
 
 </body>
 </html>
