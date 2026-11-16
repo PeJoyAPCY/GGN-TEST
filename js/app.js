@@ -1657,16 +1657,12 @@ async function submitCurrentExam(isTimeExpired = false) {
   }
 }
 
-
-
 /* ======================================================
    28. RENDER EXAM RESULT
    Examinee: Confirmation only, no score display
    ====================================================== */
 
 function renderExamResult(result) {
-  // แสดงข้อความยืนยันการส่งข้อสอบเท่านั้น
-  // ไม่แก้ไขโครงสร้าง HTML หรือองค์ประกอบเดิมของหน้า
 
   setText(
     "result-subject-name",
@@ -1674,43 +1670,10 @@ function renderExamResult(result) {
   );
 
   setText(
-    "result-score",
-    ""
-  );
-
-  setText(
     "result-status",
     "ระบบบันทึกการส่งข้อสอบของคุณแล้ว"
   );
 
-  setText(
-    "result-total-questions",
-    ""
-  );
-
-  setText(
-    "result-correct-count",
-    ""
-  );
-
-  setText(
-    "result-exam-status",
-    ""
-  );
-
-  // ซ่อนส่วนคะแนนและรายละเอียดผลสอบ
-  [
-    "result-score",
-    "result-total-questions",
-    "result-correct-count",
-    "result-exam-status"
-  ].forEach(id => {
-    const element = $(id);
-    if (element) {
-      element.textContent = "";
-      element.classList.add("hidden");
-    }
-  });
 }
 
 

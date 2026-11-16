@@ -823,115 +823,48 @@
       class="hidden"
     >
 
-      <div class="result-card">
+      
+    <div class="result-card">
 
-        <div class="login-logo">
-          GGN
-        </div>
+      <!-- Success Check Icon -->
+      <div style="
+        width: 88px;
+        height: 88px;
+        margin: 0 auto 20px;
+        border-radius: 50%;
+        background: #dcfce7;
+        color: #16a34a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 52px;
+        font-weight: 700;
+        border: 4px solid #86efac;
+      ">✓</div>
 
-        <h2>
-          สรุปผลการทดสอบ
-        </h2>
+      <h2 id="result-subject-name">
+        ส่งข้อสอบเรียบร้อยแล้ว
+      </h2>
 
-        <p class="mt-2">
-          ระบบบันทึกผลการสอบเรียบร้อยแล้ว
-        </p>
+      <p id="result-status" class="mt-2">
+        ระบบบันทึกการส่งข้อสอบของคุณแล้ว
+      </p>
 
-
-        <div class="mt-4 mb-4">
-
-          <div class="text-secondary">
-            รายวิชา
-          </div>
-
-          <h3 id="result-subject-name">
-            -
-          </h3>
-
-        </div>
-
-
-        <div class="text-secondary">
-          คะแนนที่ได้รับ
-        </div>
-
-        <div
-          id="result-score"
-          class="result-score"
-        >
-          -
-        </div>
-
-
-        <div
-          id="result-status"
-          class="result-status"
-        >
-          -
-        </div>
-
-
-        <div class="card mt-4">
-
-          <div class="flex-between mb-2">
-
-            <span class="text-secondary">
-              จำนวนข้อสอบ
-            </span>
-
-            <strong id="result-total-questions">
-              -
-            </strong>
-
-          </div>
-
-          <div class="flex-between mb-2">
-
-            <span class="text-secondary">
-              ตอบถูก
-            </span>
-
-            <strong
-              id="result-correct-count"
-              class="text-success"
-            >
-              -
-            </strong>
-
-          </div>
-
-          <div class="flex-between">
-
-            <span class="text-secondary">
-              สถานะ
-            </span>
-
-            <strong id="result-exam-status">
-              -
-            </strong>
-
-          </div>
-
-        </div>
-
-
-        <div class="alert alert-info mt-4">
-
-          ผลการสอบถูกบันทึกในระบบแล้ว
-          กรุณากลับไปยังหน้ารายวิชาเพื่อดำเนินการต่อ
-
-        </div>
-
-
-        <button
-          type="button"
-          id="btn-back-to-dashboard"
-          class="btn btn-primary btn-block mt-3"
-        >
-          กลับหน้ารายวิชา
-        </button>
-
+      <div class="alert alert-info mt-4">
+        ผลการสอบถูกบันทึกในระบบแล้ว
+        กรุณากลับไปยังหน้ารายวิชาเพื่อดำเนินการต่อ
       </div>
+
+      <button
+        type="button"
+        id="btn-back-to-dashboard"
+        class="btn btn-primary btn-block mt-3"
+      >
+        กลับหน้ารายวิชา
+      </button>
+
+    </div>
+
 
     </section>
 
